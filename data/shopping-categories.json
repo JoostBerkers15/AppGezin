@@ -1,0 +1,16 @@
+[
+  { "id": "1", "name": "Groenten & Fruit", "color": "#48bb78" },
+  { "id": "2", "name": "Vlees & Vis", "color": "#e53e3e" },
+  { "id": "3", "name": "Zuivel", "color": "#ed8936" },
+  { "id": "4", "name": "Brood & Bakkerij", "color": "#d69e2e" },
+  { "id": "5", "name": "Dranken", "color": "#3182ce" },
+  { "id": "6", "name": "Schoonmaak", "color": "#805ad5" },
+  { "id": "7", "name": "Overig", "color": "#718096" }
+]
+
+
+
+
+
+
+

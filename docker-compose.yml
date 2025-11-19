@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gezin-app-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount data directory for persistent storage
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - gezin-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gezin-app-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - gezin-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  gezin-network:
+    driver: bridge
+
+volumes:
+  data:
+

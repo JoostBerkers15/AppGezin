@@ -1,0 +1,15 @@
+[
+  {
+    "id": "1",
+    "name": "Papa Joost",
+    "type": "parent",
+    "color": "#3182ce",
+    "birthDate": ""
+  },
+  {
+    "id": "2",
+    "name": "Mama",
+    "type": "parent",
+    "color": "#e53e3e"
+  }
+]
