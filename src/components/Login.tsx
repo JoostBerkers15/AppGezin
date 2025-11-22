@@ -1,27 +1,37 @@
 import React, { useEffect, useState } from 'react';
+import { supabaseHealthCheck, getSupabaseTables } from '../services/supabaseApi';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
 import '../styles/Login.css';
-import { healthCheck, HealthResult } from '../services/api';
+
 
 const Login: React.FC = () => {
+  const [supabaseOnline, setSupabaseOnline] = useState<boolean | null>(null);
+  const [supabaseTables, setSupabaseTables] = useState<string[]>([]);
+    useEffect(() => {
+      const check = async () => {
+        const ok = await supabaseHealthCheck();
+        setSupabaseOnline(ok);
+        if (ok) {
+          console.log('✅ Verbinding met Supabase is OK');
+          const tables = await getSupabaseTables();
+          setSupabaseTables(tables);
+        } else {
+          console.error('❌ Geen verbinding met Supabase!');
+        }
+      };
+      check();
+    }, []);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
-  const [checkingBackend, setCheckingBackend] = useState(false);
-  const [backendReason, setBackendReason] = useState<string | null>(null);
   const { login } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (backendAvailable === false) {
-      setError('Backend niet bereikbaar. Controleer netwerk of probeer opnieuw.');
-      return;
-    }
 
     if (!username || !password) {
       setError('Vul alle velden in');
@@ -34,24 +44,6 @@ const Login: React.FC = () => {
     }
   };
 
-  const checkBackend = async () => {
-    setCheckingBackend(true);
-    setError('');
-    setBackendReason(null);
-    const result: HealthResult = await healthCheck();
-    setBackendAvailable(result.ok);
-    if (!result.ok) {
-      const reason = result.reason || 'Backend niet bereikbaar.';
-      setBackendReason(reason);
-      setError(reason);
-    }
-    setCheckingBackend(false);
-  };
-
-  useEffect(() => {
-    checkBackend();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div className="login-container">
@@ -62,6 +54,22 @@ const Login: React.FC = () => {
           <p>Log in om toegang te krijgen tot je gezinsplanner</p>
         </div>
 
+        {supabaseOnline === false && (
+          <div className="error-message">Geen verbinding met Supabase!</div>
+        )}
+        {supabaseOnline === true && (
+          <>
+            <div className="success-message">Verbonden met Supabase</div>
+            <div style={{ margin: '10px 0', fontSize: 14 }}>
+              <strong>Tabellen in Supabase:</strong>
+              <ul>
+                {supabaseTables.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="username">Gebruikersnaam</label>
@@ -99,19 +107,7 @@ const Login: React.FC = () => {
 
           {error && <div className="error-message">{error}</div>}
 
-          {backendAvailable === false && (
-            <div className="error-message">
-              <strong>Backend niet bereikbaar.</strong>
-              <div style={{ marginTop: 6 }}>{backendReason}</div>
-              <div style={{ marginTop: 8 }}>
-                <button type="button" onClick={checkBackend} className="retry-button">
-                  Probeer opnieuw
-                </button>
-              </div>
-            </div>
-          )}
-
-          <button type="submit" className="login-button" disabled={backendAvailable === false || checkingBackend}>
+          <button type="submit" className="login-button">
             <LogIn size={20} />
             Inloggen
           </button>

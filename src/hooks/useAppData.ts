@@ -54,13 +54,13 @@ export const useAppData = () => {
         tasksApi.getAll()
       ]);
 
-      setFamilyMembers(familyRes.data);
-      setCalendarEvents(calendarRes.data);
-      setShoppingItems(shoppingItemsRes.data);
-      setShoppingCategories(shoppingCategoriesRes.data);
-      setMeals(mealsRes.data);
-      setSleepovers(sleepoversRes.data);
-      setTasks(tasksRes.data);
+      setFamilyMembers(familyRes);
+      setCalendarEvents(calendarRes);
+      setShoppingItems(shoppingItemsRes);
+      setShoppingCategories(shoppingCategoriesRes);
+      setMeals(mealsRes);
+      setSleepovers(sleepoversRes);
+      setTasks(tasksRes);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -79,8 +79,8 @@ export const useAppData = () => {
         id: Date.now().toString()
       };
       const response = await familyMembersApi.create(newMember);
-      setFamilyMembers(prev => [...prev, response.data]);
-      return response.data;
+      if (response) setFamilyMembers(prev => [...prev, response]);
+      return response;
     } catch (error) {
       console.error('Error adding family member:', error);
       throw error;
@@ -124,8 +124,8 @@ export const useAppData = () => {
         id: Date.now().toString()
       };
       const response = await calendarEventsApi.create(newEvent);
-      setCalendarEvents(prev => [...prev, response.data]);
-      return response.data;
+      if (response) setCalendarEvents(prev => [...prev, response]);
+      return response;
     } catch (error) {
       console.error('Error adding calendar event:', error);
       throw error;
@@ -170,8 +170,8 @@ export const useAppData = () => {
         addedDate: new Date().toISOString()
       };
       const response = await shoppingItemsApi.create(newItem);
-      setShoppingItems(prev => [...prev, response.data]);
-      return response.data;
+      if (response) setShoppingItems(prev => [...prev, response]);
+      return response;
     } catch (error) {
       console.error('Error adding shopping item:', error);
       throw error;
@@ -221,8 +221,8 @@ export const useAppData = () => {
         id: Date.now().toString()
       };
       const response = await shoppingCategoriesApi.create(newCategory);
-      setShoppingCategories(prev => [...prev, response.data]);
-      return response.data;
+      if (response) setShoppingCategories(prev => [...prev, response]);
+      return response;
     } catch (error) {
       console.error('Error adding shopping category:', error);
       throw error;
@@ -240,8 +240,8 @@ export const useAppData = () => {
         id: Date.now().toString()
       };
       const response = await mealsApi.create(newMeal);
-      setMeals(prev => [...prev, response.data]);
-      return response.data;
+      if (response) setMeals(prev => [...prev, response]);
+      return response;
     } catch (error) {
       console.error('Error adding meal:', error);
       throw error;
@@ -285,8 +285,8 @@ export const useAppData = () => {
         id: Date.now().toString()
       };
       const response = await sleepoversApi.create(newSleepover);
-      setSleepovers(prev => [...prev, response.data]);
-      return response.data;
+      if (response) setSleepovers(prev => [...prev, response]);
+      return response;
     } catch (error) {
       console.error('Error adding sleepover:', error);
       throw error;
@@ -331,8 +331,8 @@ export const useAppData = () => {
         createdDate: new Date().toISOString()
       };
       const response = await tasksApi.create(newTask);
-      setTasks(prev => [...prev, response.data]);
-      return response.data;
+      if (response) setTasks(prev => [...prev, response]);
+      return response;
     } catch (error) {
       console.error('Error adding task:', error);
       throw error;

@@ -9,7 +9,7 @@ export interface FamilyMember {
   id: string;
   name: string;
   type: 'child' | 'parent' | 'grandparent' | 'babysitter';
-  birthDate?: string;
+  birthdate?: string;
   color: string; // Voor kalender filtering
 }
 
@@ -32,10 +32,10 @@ export interface ShoppingItem {
   category: string;
   quantity: number;
   unit: string;
-  inStock: boolean;
-  isCompleted: boolean;
-  addedDate: string;
-  completedDate?: string;
+  instock: boolean;
+  iscompleted: boolean;
+  addeddate: string;
+  completeddate?: string;
 }
 
 export interface ShoppingCategory {
@@ -44,20 +44,20 @@ export interface ShoppingCategory {
   color: string;
 }
 
-// Maaltijd types
-export interface Meal {
   id: string;
   date: string;
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   dish: string;
   location: 'home' | 'restaurant' | 'school' | 'work' | 'other';
-  locationDetails?: string;
-  participants: string[]; // FamilyMember IDs
+  assignedto?: string[]; // FamilyMember IDs
+  duedate?: string;
   recurring?: {
     frequency: 'daily' | 'weekly' | 'monthly';
     endDate?: string;
   };
 }
+  createddate: string;
+  completeddate?: string;
 
 // Logeren types
 export interface Sleepover {
