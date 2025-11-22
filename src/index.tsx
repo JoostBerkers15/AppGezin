@@ -8,6 +8,8 @@ import { AuthProvider } from './contexts/AuthContext';
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
+// (Environment logging removed)
 root.render(
   <React.StrictMode>
     <AuthProvider>

@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, TypeVar, Generic
+from typing import List, TypeVar, Generic, Optional
 from pathlib import Path
 
 T = TypeVar('T')
@@ -33,7 +33,7 @@ class FileStorage(Generic[T]):
         with open(self.filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     
-    def find_by_id(self, item_id: str) -> dict | None:
+    def find_by_id(self, item_id: str) -> Optional[dict]:
         """Find an item by ID"""
         items = self.read_all()
         return next((item for item in items if item.get('id') == item_id), None)
@@ -45,7 +45,7 @@ class FileStorage(Generic[T]):
         self.write_all(items)
         return item
     
-    def update(self, item_id: str, updates: dict) -> dict | None:
+    def update(self, item_id: str, updates: dict) -> Optional[dict]:
         """Update an existing item"""
         items = self.read_all()
         for i, item in enumerate(items):

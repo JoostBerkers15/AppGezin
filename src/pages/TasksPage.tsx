@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAppData } from '../hooks/useAppData';
-import { Task, FamilyMember } from '../types';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { Task } from '../types';
 import { 
   CheckSquare, 
   Plus, 
@@ -11,10 +12,9 @@ import {
   Edit2,
   Trash2,
   X,
-  Filter,
   Search
 } from 'lucide-react';
-import { format, parseISO, isPast, isFuture } from 'date-fns';
+import { format, parseISO, isPast } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import '../styles/TasksPage.css';
 
@@ -42,6 +42,21 @@ const TasksPage: React.FC = () => {
     priority: 'medium' as Task['priority'],
     category: 'Algemeen'
   });
+
+  const [isCompact, setIsCompact] = useLocalStorage<boolean>('tasks.compactView', false);
+  const [isTableCompact, setIsTableCompact] = useLocalStorage<boolean>('tasks.compactTable', false);
+  const [sortKey, setSortKey] = useState<'title'|'dueDate'|'assignedTo'|'priority'|'status'>('dueDate');
+  const [sortDir, setSortDir] = useState<'asc'|'desc'>('asc');
+
+  const changeSort = (key: typeof sortKey) => {
+    if (key === sortKey) {
+      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
 
   const priorityLabels = {
     low: 'Laag',
@@ -205,11 +220,39 @@ const TasksPage: React.FC = () => {
     return assignee?.name || 'Onbekend';
   };
 
-  const getAssigneeColor = (assigneeId?: string) => {
-    if (!assigneeId) return '#718096';
-    const assignee = familyMembers.find(member => member.id === assigneeId);
-    return assignee?.color || '#718096';
-  };
+  // sortedTasks depends on filteredTasks and familyMembers — define it after those are available
+  const sortedTasks = useMemo(() => {
+    const arr = [...filteredTasks];
+    const priorityOrder = { high: 0, medium: 1, low: 2 } as any;
+    const statusOrder = { pending: 0, in_progress: 1, completed: 2 } as any;
+
+    arr.sort((a, b) => {
+      if (sortKey === 'title') {
+        return a.title.localeCompare(b.title);
+      }
+      if (sortKey === 'dueDate') {
+        if (a.dueDate && b.dueDate) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        if (a.dueDate) return -1;
+        if (b.dueDate) return 1;
+        return 0;
+      }
+      if (sortKey === 'assignedTo') {
+        const na = (familyMembers.find(m => m.id === a.assignedTo)?.name || '').toLowerCase();
+        const nb = (familyMembers.find(m => m.id === b.assignedTo)?.name || '').toLowerCase();
+        return na.localeCompare(nb);
+      }
+      if (sortKey === 'priority') {
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      }
+      if (sortKey === 'status') {
+        return statusOrder[a.status] - statusOrder[b.status];
+      }
+      return 0;
+    });
+
+    if (sortDir === 'desc') arr.reverse();
+    return arr;
+  }, [filteredTasks, sortKey, sortDir, familyMembers]);
 
   const isTaskOverdue = (task: Task) => {
     return task.dueDate && 
@@ -226,6 +269,24 @@ const TasksPage: React.FC = () => {
         </div>
         
         <div className="header-actions">
+          <button
+            className={`compact-toggle ${isCompact ? 'active' : ''}`}
+            onClick={() => { setIsCompact(prev => !prev); if (isTableCompact) setIsTableCompact(false); }}
+            aria-pressed={isCompact}
+            title={isCompact ? 'Compactweergave uit' : 'Compactweergave aan'}
+          >
+            {isCompact ? 'Compact: aan' : 'Compact: uit'}
+          </button>
+
+          <button
+            className={`compact-toggle table-toggle ${isTableCompact ? 'active' : ''}`}
+            onClick={() => { setIsTableCompact(prev => !prev); if (!isTableCompact) setIsCompact(false); }}
+            aria-pressed={isTableCompact}
+            title={isTableCompact ? 'Tabelweergave uit' : 'Tabelweergave aan'}
+          >
+            {isTableCompact ? 'Tabel: aan' : 'Tabel: uit'}
+          </button>
+
           <button 
             className="add-button"
             onClick={() => setIsAddModalOpen(true)}
@@ -341,7 +402,7 @@ const TasksPage: React.FC = () => {
       </div>
 
       {/* Tasks List */}
-      <div className="tasks-list">
+      <div className={`tasks-list ${isCompact ? 'compact' : ''} ${isTableCompact ? 'table' : ''}`}>
         {filteredTasks.length === 0 ? (
           <div className="empty-state">
             <CheckSquare size={64} />
@@ -361,101 +422,152 @@ const TasksPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="tasks-grid">
-            {filteredTasks.map(task => {
-              const isOverdue = isTaskOverdue(task);
-              const assignee = familyMembers.find(member => member.id === task.assignedTo);
+          isTableCompact ? (
+            <div className="tasks-table-wrap">
+              <table className="tasks-table">
+                <thead>
+                  <tr>
+                    <th><button type="button" onClick={() => changeSort('title')}>Titel{sortKey==='title' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
+                    <th><button type="button" onClick={() => changeSort('dueDate')}>Deadline{sortKey==='dueDate' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
+                    <th><button type="button" onClick={() => changeSort('assignedTo')}>Persoon{sortKey==='assignedTo' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
+                    <th><button type="button" onClick={() => changeSort('priority')}>Prioriteit{sortKey==='priority' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
+                    <th><button type="button" onClick={() => changeSort('status')}>Status{sortKey==='status' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedTasks.map(task => {
+                    const isOverdue = isTaskOverdue(task);
+                    const assignee = familyMembers.find(member => member.id === task.assignedTo);
+                    return (
+                      <tr key={task.id} className={`${task.status} ${isOverdue ? 'overdue' : ''}`}>
+                        <td className="td-title">
+                          <div className="title-wrap">
+                            <span className="title-text">{task.title}</span>
+                            <span className="category-text">{task.category}</span>
+                          </div>
+                        </td>
+                        <td className="td-date">{task.dueDate ? format(parseISO(task.dueDate), 'dd MMM', { locale: nl }) : '-'}</td>
+                        <td className="td-assignee">{task.assignedTo && assignee ? assignee.name : '—'}</td>
+                        <td className="td-priority">{priorityLabels[task.priority]}</td>
+                        <td className="td-status">
+                          <select
+                            value={task.status}
+                            onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
+                            className={`status-select ${task.status}`}
+                          >
+                            {Object.entries(statusLabels).map(([value, label]) => (
+                              <option key={value} value={value}>{label}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="td-actions">
+                          <button className="action-button edit" onClick={() => handleEdit(task)} aria-label="Bewerken"><Edit2 size={14} /></button>
+                          <button className="action-button delete" onClick={() => handleDelete(task.id)} aria-label="Verwijderen"><Trash2 size={14} /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="tasks-grid">
+              {filteredTasks.map(task => {
+                const isOverdue = isTaskOverdue(task);
+                const assignee = familyMembers.find(member => member.id === task.assignedTo);
 
-              return (
-                <div 
-                  key={task.id} 
-                  className={`task-card ${task.status} ${isOverdue ? 'overdue' : ''}`}
-                >
-                  <div className="task-header">
-                    <div className="task-priority">
-                      <div 
-                        className="priority-indicator"
-                        style={{ backgroundColor: priorityColors[task.priority] }}
-                        title={`Prioriteit: ${priorityLabels[task.priority]}`}
-                      />
-                      <span className="task-category">{task.category}</span>
-                    </div>
-                    
-                    <div className="task-actions">
-                      <button 
-                        className="action-button edit"
-                        onClick={() => handleEdit(task)}
-                        aria-label="Bewerken"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        className="action-button delete"
-                        onClick={() => handleDelete(task.id)}
-                        aria-label="Verwijderen"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="task-content">
-                    <h3>{task.title}</h3>
-                    {task.description && (
-                      <p className="task-description">{task.description}</p>
-                    )}
-                  </div>
-
-                  <div className="task-details">
-                    {task.dueDate && (
-                      <div className={`task-detail ${isOverdue ? 'overdue' : ''}`}>
-                        <Calendar size={16} />
-                        <span>
-                          {format(parseISO(task.dueDate), 'dd MMM yyyy', { locale: nl })}
-                          {isOverdue && ' (verlopen)'}
-                        </span>
+                return (
+                  <div 
+                    key={task.id} 
+                    className={`task-card ${task.status} ${isOverdue ? 'overdue' : ''}`}
+                  >
+                    <div className="task-header">
+                      <div className="task-priority">
+                        <div 
+                          className="priority-indicator"
+                          style={{ backgroundColor: priorityColors[task.priority] }}
+                          title={`Prioriteit: ${priorityLabels[task.priority]}`}
+                        />
+                        <span className="task-category">{task.category}</span>
                       </div>
-                    )}
-                    
-                    {task.assignedTo && assignee && (
-                      <div className="task-detail">
-                        <User size={16} />
-                        <span 
-                          className="assignee"
-                          style={{ 
-                            backgroundColor: `${assignee.color}20`, 
-                            color: assignee.color 
-                          }}
+                      
+                      <div className="task-actions">
+                        <button 
+                          className="action-button edit"
+                          onClick={() => handleEdit(task)}
+                          aria-label="Bewerken"
                         >
-                          {assignee.name}
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          className="action-button delete"
+                          onClick={() => handleDelete(task.id)}
+                          aria-label="Verwijderen"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="task-content">
+                      <h3>{task.title}</h3>
+                      {task.description && (
+                        <p className="task-description">{task.description}</p>
+                      )}
+                    </div>
+
+                    <div className="task-details">
+                      {task.dueDate && (
+                        <div className={`task-detail ${isOverdue ? 'overdue' : ''}`}>
+                          <Calendar size={16} />
+                          <span>
+                            {format(parseISO(task.dueDate), 'dd MMM yyyy', { locale: nl })}
+                            {isOverdue && ' (verlopen)'}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {task.assignedTo && assignee && (
+                        <div className="task-detail">
+                          <User size={16} />
+                          <span 
+                            className="assignee"
+                            style={{ 
+                              backgroundColor: `${assignee.color}20`, 
+                              color: assignee.color 
+                            }}
+                          >
+                            {assignee.name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="task-footer">
+                      <div className="status-controls">
+                        <select
+                          value={task.status}
+                          onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
+                          className={`status-select ${task.status}`}
+                        >
+                          {Object.entries(statusLabels).map(([value, label]) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div className="task-meta">
+                        <span className="created-date">
+                          Aangemaakt: {format(parseISO(task.createdDate), 'dd MMM', { locale: nl })}
                         </span>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="task-footer">
-                    <div className="status-controls">
-                      <select
-                        value={task.status}
-                        onChange={(e) => handleStatusChange(task.id, e.target.value as Task['status'])}
-                        className={`status-select ${task.status}`}
-                      >
-                        {Object.entries(statusLabels).map(([value, label]) => (
-                          <option key={value} value={value}>{label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div className="task-meta">
-                      <span className="created-date">
-                        Aangemaakt: {format(parseISO(task.createdDate), 'dd MMM', { locale: nl })}
-                      </span>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )
         )}
       </div>
 

@@ -17,10 +17,34 @@ load_dotenv()
 app = FastAPI(title="Gezin App API", version="1.0.0")
 
 # CORS configuration - allow frontend to access API
+# Configuration options (set in environment or backend/.env):
+# - ALLOWED_ORIGINS: comma separated list of allowed origins (e.g. http://localhost:3000, http://192.168.2.20:3000)
+# - ALLOW_ALL_ORIGINS: if truthy (true/1) allow any origin (useful for development)
+# - ALLOW_CREDENTIALS: if truthy allow credentials (cookies/Authorization) to be sent
+# Notes: Browsers won't accept a wildcard '*' for Access-Control-Allow-Origin when credentials
+# are allowed. To allow any origin with credentials we use a regex that echoes the request origin.
+allow_all = os.getenv("ALLOW_ALL_ORIGINS", "false").strip().lower() in ("1", "true", "yes")
+allow_credentials_env = os.getenv("ALLOW_CREDENTIALS")
+allow_credentials = True if allow_credentials_env is None else (allow_credentials_env.strip().lower() in ("1", "true", "yes"))
+
+if allow_all:
+    # Allow any origin. This will echo the request Origin header back in the response
+    # (works with credentials when allow_credentials=True).
+    allow_origin_regex = r".*"
+    allow_origins = []
+else:
+    allowed_origins_env = os.getenv("ALLOWED_ORIGINS")
+    if allowed_origins_env:
+        allow_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+    else:
+        allow_origins = ["http://localhost:3000"]
+    allow_origin_regex = None
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
-    allow_credentials=True,
+    allow_origins=allow_origins,
+    allow_origin_regex=allow_origin_regex,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -9,7 +9,23 @@ import {
   Task 
 } from '../types';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Resolve base URL for API requests:
+// - If `REACT_APP_API_URL` is set (recommended for multi-device access), use it.
+// - Otherwise fall back to the current page's hostname with port 8000.
+// Note: `localhost` in the browser always refers to the client machine. When
+// accessing the app from another device you must set `REACT_APP_API_URL`
+// to the backend server's reachable IP/hostname (for example: http://192.168.1.100:8000).
+const getApiBaseUrl = () => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+  if (typeof window !== 'undefined' && window.location) {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    return `${protocol}//${hostname}:8000`;
+  }
+  return 'http://localhost:8000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -100,6 +116,49 @@ export const tasksApi = {
 };
 
 export default api;
+
+// Health check helper — returns true when backend responds
+export type HealthResult = {
+  ok: boolean;
+  reason?: string;
+};
+
+// Health check helper — returns ok=true when backend responds, otherwise includes a reason string
+export const healthCheck = async (): Promise<HealthResult> => {
+  try {
+    const res = await api.get('/');
+    if (res.status === 200) return { ok: true };
+    return { ok: false, reason: `Server responded with status ${res.status} ${res.statusText}` };
+  } catch (err: any) {
+    // axios error handling
+    if (err.response) {
+      // Server responded with a status outside 2xx
+      return { ok: false, reason: `Server error ${err.response.status} ${err.response.statusText}` };
+    }
+    if (err.request) {
+      // Request made but no response received. Could be network issue or CORS blocking the response.
+      // Browser CORS errors surface as a "Network Error" with no response available.
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('timeout')) {
+        return { ok: false, reason: 'Request timed out. Backend may be down or unreachable.' };
+      }
+      if (msg.toLowerCase().includes('network')) {
+        return {
+          ok: false,
+          reason:
+            'Network Error: could not reach backend. This can mean the server is down, the IP/port is unreachable, or the browser blocked the response because of CORS. Check backend, firewall and CORS settings.',
+        };
+      }
+      return {
+        ok: false,
+        reason:
+          'No response received from backend. Possible causes: server is not running, firewall blocking, or CORS preventing the browser from seeing the response.',
+      };
+    }
+    // Something happened setting up the request
+    return { ok: false, reason: `Request error: ${err.message || String(err)}` };
+  }
+};
 
 
 

@@ -1,15 +1,23 @@
 [
   {
     "id": "1",
-    "name": "Papa Joost",
+    "name": "Joost",
     "type": "parent",
     "color": "#3182ce",
     "birthDate": ""
   },
   {
     "id": "2",
-    "name": "Mama",
+    "name": "Malou",
     "type": "parent",
-    "color": "#e53e3e"
+    "color": "#e53e3e",
+    "birthDate": ""
+  },
+  {
+    "id": "1763589476532",
+    "name": "Mats",
+    "type": "child",
+    "color": "#9f7aea",
+    "birthDate": "2023-07-25"
   }
 ]

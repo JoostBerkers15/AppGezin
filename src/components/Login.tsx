@@ -1,18 +1,27 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
 import '../styles/Login.css';
+import { healthCheck, HealthResult } from '../services/api';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
+  const [checkingBackend, setCheckingBackend] = useState(false);
+  const [backendReason, setBackendReason] = useState<string | null>(null);
   const { login } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (backendAvailable === false) {
+      setError('Backend niet bereikbaar. Controleer netwerk of probeer opnieuw.');
+      return;
+    }
 
     if (!username || !password) {
       setError('Vul alle velden in');
@@ -24,6 +33,25 @@ const Login: React.FC = () => {
       setError('Onjuiste gebruikersnaam of wachtwoord');
     }
   };
+
+  const checkBackend = async () => {
+    setCheckingBackend(true);
+    setError('');
+    setBackendReason(null);
+    const result: HealthResult = await healthCheck();
+    setBackendAvailable(result.ok);
+    if (!result.ok) {
+      const reason = result.reason || 'Backend niet bereikbaar.';
+      setBackendReason(reason);
+      setError(reason);
+    }
+    setCheckingBackend(false);
+  };
+
+  useEffect(() => {
+    checkBackend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="login-container">
@@ -71,7 +99,19 @@ const Login: React.FC = () => {
 
           {error && <div className="error-message">{error}</div>}
 
-          <button type="submit" className="login-button">
+          {backendAvailable === false && (
+            <div className="error-message">
+              <strong>Backend niet bereikbaar.</strong>
+              <div style={{ marginTop: 6 }}>{backendReason}</div>
+              <div style={{ marginTop: 8 }}>
+                <button type="button" onClick={checkBackend} className="retry-button">
+                  Probeer opnieuw
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button type="submit" className="login-button" disabled={backendAvailable === false || checkingBackend}>
             <LogIn size={20} />
             Inloggen
           </button>

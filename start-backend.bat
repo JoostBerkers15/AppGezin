@@ -16,4 +16,4 @@ REM Activate virtual environment
 call venv\Scripts\activate.bat
 
 REM Start FastAPI server
-python -m uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000

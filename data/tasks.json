@@ -1,8 +1,158 @@
-[]
-
-
-
-
-
-
-
+[
+  {
+    "id": "1763587456139",
+    "title": "Trap schilderen",
+    "description": "Trap schuren\nTrap verven\nSchilder laten kijken",
+    "assignedTo": "1",
+    "priority": "low",
+    "status": "pending",
+    "dueDate": "2026-02-20",
+    "category": "Onderhoud",
+    "createdDate": "2025-11-19T21:24:16.139Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763800617565",
+    "title": "Dekbed checken",
+    "description": "",
+    "assignedTo": "1",
+    "priority": "high",
+    "status": "pending",
+    "dueDate": "2025-11-23",
+    "category": "Huishouden",
+    "createdDate": "2025-11-22T08:36:57.565Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763801009385",
+    "title": "Kerstboom",
+    "description": "Halen en opzetten",
+    "assignedTo": "1",
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "2025-11-29",
+    "category": "Algemeen",
+    "createdDate": "2025-11-22T08:43:29.385Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763801111869",
+    "title": "App fixen",
+    "description": "",
+    "assignedTo": "1",
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "",
+    "category": "Algemeen",
+    "createdDate": "2025-11-22T08:45:11.869Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763802017436",
+    "title": "Was wegwerken",
+    "description": "",
+    "assignedTo": null,
+    "priority": "high",
+    "status": "pending",
+    "dueDate": "",
+    "category": "Huishouden",
+    "createdDate": "2025-11-22T09:00:17.436Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763802040774",
+    "title": "Staal bedwand",
+    "description": "",
+    "assignedTo": null,
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "",
+    "category": "Onderhoud",
+    "createdDate": "2025-11-22T09:00:40.774Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763802056670",
+    "title": "Lijstje ophangen 2 kamers",
+    "description": "",
+    "assignedTo": null,
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "",
+    "category": "Onderhoud",
+    "createdDate": "2025-11-22T09:00:56.670Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763802096471",
+    "title": "Pinnen voor dirk",
+    "description": "",
+    "assignedTo": null,
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "",
+    "category": "Financiën",
+    "createdDate": "2025-11-22T09:01:36.471Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763802111755",
+    "title": "Contact schilder",
+    "description": "",
+    "assignedTo": null,
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "",
+    "category": "Onderhoud",
+    "createdDate": "2025-11-22T09:01:51.755Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763802129253",
+    "title": "Felle lampen halen",
+    "description": "",
+    "assignedTo": "1",
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "2025-11-23",
+    "category": "Onderhoud",
+    "createdDate": "2025-11-22T09:02:09.253Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763802163436",
+    "title": "Stopcontact slaapkamer bestellen",
+    "description": "",
+    "assignedTo": "1",
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "",
+    "category": "Algemeen",
+    "createdDate": "2025-11-22T09:02:43.436Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763802177497",
+    "title": "Kerst spullen uitpakken",
+    "description": "",
+    "assignedTo": "2",
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "",
+    "category": "Algemeen",
+    "createdDate": "2025-11-22T09:02:57.497Z",
+    "completedDate": null
+  },
+  {
+    "id": "1763822560584",
+    "title": "Meloen eten",
+    "description": "",
+    "assignedTo": "2",
+    "priority": "medium",
+    "status": "pending",
+    "dueDate": "2025-11-26",
+    "category": "Huishouden",
+    "createdDate": "2025-11-22T14:42:40.584Z",
+    "completedDate": null
+  }
+]
