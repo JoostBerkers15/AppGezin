@@ -43,31 +43,32 @@ export interface ShoppingCategory {
   name: string;
   color: string;
 }
-
+// Maaltijd types
+export interface Meal {
   id: string;
   date: string;
-  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  mealtype: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   dish: string;
   location: 'home' | 'restaurant' | 'school' | 'work' | 'other';
-  assignedto?: string[]; // FamilyMember IDs
-  duedate?: string;
+  locationdetails?: string;
+  participants: string[];
   recurring?: {
     frequency: 'daily' | 'weekly' | 'monthly';
-    endDate?: string;
+    enddate?: string;
   };
-}
   createddate: string;
   completeddate?: string;
+}
 
 // Logeren types
 export interface Sleepover {
   id: string;
-  childId: string; // FamilyMember ID
+  childid: string; // FamilyMember ID
   date: string;
   location: string;
-  hostName: string;
+  hostname: string;
   notes?: string;
-  pickupTime?: string;
+  pickuptime?: string;
 }
 
 // Taken types
@@ -75,15 +76,15 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  assignedTo?: string[]; // FamilyMember IDs
-  dueDate?: string;
+  assignedto?: string[]; // FamilyMember IDs
+  duedate?: string;
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'in_progress' | 'completed';
   categories: string[];
   date?: string;
   order?: number;
-  createdDate: string;
-  completedDate?: string;
+  createddate: string;
+  completeddate?: string;
 }
 
 // App state types

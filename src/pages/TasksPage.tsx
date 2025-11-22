@@ -38,7 +38,7 @@ const TasksPage: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    assignedTo: [] as string[],
+    assignedto: [] as string[],
     priority: 'medium' as Task['priority'],
     categories: ['Algemeen'] as string[],
     date: ''
@@ -57,7 +57,7 @@ const TasksPage: React.FC = () => {
   };
 
   const reorderTasks = async (draggedId: string, targetId: string) => {
-    const base = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
+    const base = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createddate).getTime() - new Date(b.createddate).getTime());
     const draggedIndex = base.findIndex(t => t.id === draggedId);
     const targetIndex = base.findIndex(t => t.id === targetId);
     if (draggedIndex === -1 || targetIndex === -1) return;
@@ -86,7 +86,7 @@ const TasksPage: React.FC = () => {
 
   const [isCompact, setIsCompact] = useLocalStorage<boolean>('tasks.compactView', false);
   const [isTableCompact, setIsTableCompact] = useLocalStorage<boolean>('tasks.compactTable', false);
-  const [sortKey, setSortKey] = useState<'title'|'date'|'assignedTo'|'priority'|'status'>('date');
+  const [sortKey, setSortKey] = useState<'title'|'date'|'assignedto'|'priority'|'status'>('date');
   const [sortDir, setSortDir] = useState<'asc'|'desc'>('asc');
 
   const changeSort = (key: typeof sortKey) => {
@@ -154,9 +154,9 @@ const TasksPage: React.FC = () => {
     // Assignee filter
     if (assigneeFilter !== 'all') {
       if (assigneeFilter === '') {
-        filtered = filtered.filter(task => !task.assignedTo || task.assignedTo.length === 0);
+        filtered = filtered.filter(task => !task.assignedto || task.assignedto.length === 0);
       } else {
-        filtered = filtered.filter(task => task.assignedTo && task.assignedTo.includes(assigneeFilter));
+        filtered = filtered.filter(task => task.assignedto && task.assignedto.includes(assigneeFilter));
       }
     }
 
@@ -179,7 +179,7 @@ const TasksPage: React.FC = () => {
       }
       
       // Fallback to creation date
-      return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
+      return new Date(b.createddate).getTime() - new Date(a.createddate).getTime();
     });
   }, [tasks, searchTerm, statusFilter, priorityFilter, assigneeFilter, categoryFilter]);
 
@@ -199,7 +199,7 @@ const TasksPage: React.FC = () => {
     const taskData = {
       title: formData.title,
       description: formData.description,
-      assignedTo: formData.assignedTo && formData.assignedTo.length ? formData.assignedTo : undefined,
+      assignedto: formData.assignedto && formData.assignedto.length ? formData.assignedto : undefined,
       date: formData.date || undefined,
       priority: formData.priority,
       categories: formData.categories && formData.categories.length ? formData.categories : ['Algemeen'],
@@ -209,8 +209,6 @@ const TasksPage: React.FC = () => {
     if (editingTask) {
       updateTask(editingTask.id, taskData);
       setEditingTask(null);
-    } else {
-      addTask(taskData);
     }
 
     resetForm();
@@ -221,7 +219,7 @@ const TasksPage: React.FC = () => {
     setFormData({
       title: '',
       description: '',
-      assignedTo: [],
+      assignedto: [],
       priority: 'medium',
       categories: ['Algemeen'] as string[],
       date: ''
@@ -233,7 +231,7 @@ const TasksPage: React.FC = () => {
     setFormData({
       title: task.title,
       description: task.description || '',
-      assignedTo: task.assignedTo || [],
+      assignedto: task.assignedto || [],
       date: task.date || '',
       priority: task.priority,
       categories: task.categories || ['Algemeen']
@@ -269,7 +267,7 @@ const TasksPage: React.FC = () => {
   };
 
   const moveTaskUp = async (task: Task) => {
-    const sorted = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
+    const sorted = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createddate).getTime() - new Date(b.createddate).getTime());
     const idx = sorted.findIndex(t => t.id === task.id);
     if (idx > 0) {
       const other = sorted[idx - 1];
@@ -281,7 +279,7 @@ const TasksPage: React.FC = () => {
   };
 
   const moveTaskDown = async (task: Task) => {
-    const sorted = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
+    const sorted = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createddate).getTime() - new Date(b.createddate).getTime());
     const idx = sorted.findIndex(t => t.id === task.id);
     if (idx < sorted.length - 1 && idx !== -1) {
       const other = sorted[idx + 1];
@@ -316,9 +314,9 @@ const TasksPage: React.FC = () => {
       }
 
       // 'dueDate' (deadline) removed from UI; no sorting by dueDate
-      if (sortKey === 'assignedTo') {
-        const aFirst = a.assignedTo && a.assignedTo.length ? a.assignedTo[0] : undefined;
-        const bFirst = b.assignedTo && b.assignedTo.length ? b.assignedTo[0] : undefined;
+      if (sortKey === 'assignedto') {
+        const aFirst = a.assignedto && a.assignedto.length ? a.assignedto[0] : undefined;
+        const bFirst = b.assignedto && b.assignedto.length ? b.assignedto[0] : undefined;
         const na = (aFirst ? (familyMembers.find(m => m.id === aFirst)?.name || '') : '').toLowerCase();
         const nb = (bFirst ? (familyMembers.find(m => m.id === bFirst)?.name || '') : '').toLowerCase();
         return na.localeCompare(nb);
@@ -507,7 +505,7 @@ const TasksPage: React.FC = () => {
                   <tr>
                     <th><button type="button" onClick={() => changeSort('title')}>Titel{sortKey==='title' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
                     <th><button type="button" onClick={() => changeSort('date')}>Datum{sortKey==='date' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
-                    <th><button type="button" onClick={() => changeSort('assignedTo')}>Persoon{sortKey==='assignedTo' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
+                    <th><button type="button" onClick={() => changeSort('assignedto')}>Persoon{sortKey==='assignedto' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
                     <th><button type="button" onClick={() => changeSort('priority')}>Prioriteit{sortKey==='priority' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
                     <th><button type="button" onClick={() => changeSort('status')}>Status{sortKey==='status' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
                     <th />
@@ -532,7 +530,7 @@ const TasksPage: React.FC = () => {
                           </div>
                         </td>
                         <td className="td-date">{task.date ? format(parseISO(task.date), 'dd MMM', { locale: nl }) : '-'}</td>
-                            <td className="td-assignee">{task.assignedTo && task.assignedTo.length ? getAssigneeNames(task.assignedTo) : '—'}</td>
+                            <td className="td-assignee">{task.assignedto && task.assignedto.length ? getAssigneeNames(task.assignedto) : '—'}</td>
                         <td className="td-priority">{priorityLabels[task.priority]}</td>
                         <td className="td-status">
                           <select
@@ -614,11 +612,11 @@ const TasksPage: React.FC = () => {
                         </div>
                       )}
                       
-                      {task.assignedTo && task.assignedTo.length > 0 && (
+                      {task.assignedto && task.assignedto.length > 0 && (
                         <div className="task-detail">
                           <User size={16} />
                           <span className="assignee-multi">
-                            {task.assignedTo?.map(id => {
+                            {task.assignedto?.map(id => {
                               const a = familyMembers.find(m => m.id === id);
                               return (
                                 <span key={id} className="assignee" style={{ backgroundColor: `${a?.color}20`, color: a?.color }}>{a?.name}</span>
@@ -644,7 +642,7 @@ const TasksPage: React.FC = () => {
                       
                       <div className="task-meta">
                         <span className="created-date">
-                          Aangemaakt: {format(parseISO(task.createdDate), 'dd MMM', { locale: nl })}
+                          Aangemaakt: {format(parseISO(task.createddate), 'dd MMM', { locale: nl })}
                         </span>
                       </div>
                     </div>
@@ -727,14 +725,14 @@ const TasksPage: React.FC = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="assignedTo">Toegewezen aan</label>
+                  <label htmlFor="assignedto">Toegewezen aan</label>
                   <select
-                    id="assignedTo"
+                    id="assignedto"
                     multiple
-                    value={formData.assignedTo}
+                    value={formData.assignedto}
                     onChange={(e) => {
                       const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                      setFormData({ ...formData, assignedTo: opts });
+                      setFormData({ ...formData, assignedto: opts });
                     }}
                   >
                     {familyMembers.map(member => (

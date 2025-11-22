@@ -11,7 +11,7 @@ const FamilyPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     type: 'child' as FamilyMember['type'],
-    birthDate: '',
+    birthdate: '',
     color: '#3182ce'
   });
 
@@ -48,7 +48,7 @@ const FamilyPage: React.FC = () => {
     setFormData({
       name: '',
       type: 'child',
-      birthDate: '',
+      birthdate: '',
       color: '#3182ce'
     });
     setIsAddModalOpen(false);
@@ -59,7 +59,7 @@ const FamilyPage: React.FC = () => {
     setFormData({
       name: member.name,
       type: member.type,
-      birthDate: member.birthDate || '',
+      birthdate: member.birthdate || '',
       color: member.color
     });
     setIsAddModalOpen(true);
@@ -77,7 +77,7 @@ const FamilyPage: React.FC = () => {
     setFormData({
       name: '',
       type: 'child',
-      birthDate: '',
+      birthdate: '',
       color: '#3182ce'
     });
   };
@@ -130,9 +130,9 @@ const FamilyPage: React.FC = () => {
                     
                     <div className="member-info">
                       <h3>{member.name}</h3>
-                      {member.birthDate && (
+                      {member.birthdate && (
                         <p className="birth-date">
-                          Geboren: {new Date(member.birthDate).toLocaleDateString('nl-NL')}
+                          Geboren: {new Date(member.birthdate).toLocaleDateString('nl-NL')}
                         </p>
                       )}
                     </div>
@@ -213,12 +213,12 @@ const FamilyPage: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="birthDate">Geboortedatum</label>
+                <label htmlFor="birthdate">Geboortedatum</label>
                 <input
                   type="date"
-                  id="birthDate"
-                  value={formData.birthDate}
-                  onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                  id="birthdate"
+                  value={formData.birthdate}
+                  onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
                 />
               </div>
 
