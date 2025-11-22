@@ -62,11 +62,17 @@ class Task(BaseModel):
     id: str
     title: str
     description: Optional[str] = None
-    assignedTo: Optional[str] = None
+    # support multiple assignees (family member ids)
+    assignedTo: Optional[List[str]] = None
     priority: str  # 'low', 'medium', 'high'
     status: str  # 'pending', 'in_progress', 'completed'
+    # optional scheduled date (e.g. task date) and a deadline
+    date: Optional[str] = None
     dueDate: Optional[str] = None
-    category: str
+    # support multiple categories
+    categories: List[str] = []
+    # ordering field to control order in lists/tables
+    order: Optional[int] = None
     createdDate: str
     completedDate: Optional[str] = None
 

@@ -14,7 +14,7 @@ import {
   X,
   Search
 } from 'lucide-react';
-import { format, parseISO, isPast } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import '../styles/TasksPage.css';
 
@@ -33,19 +33,60 @@ const TasksPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    assignedTo: '',
-    dueDate: '',
+    assignedTo: [] as string[],
     priority: 'medium' as Task['priority'],
-    category: 'Algemeen'
+    categories: ['Algemeen'] as string[],
+    date: ''
   });
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const onDragStart = (e: React.DragEvent, id: string) => {
+    setDraggingId(id);
+    try { e.dataTransfer?.setData('text/plain', id); } catch {}
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  };
+
+  const reorderTasks = async (draggedId: string, targetId: string) => {
+    const base = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
+    const draggedIndex = base.findIndex(t => t.id === draggedId);
+    const targetIndex = base.findIndex(t => t.id === targetId);
+    if (draggedIndex === -1 || targetIndex === -1) return;
+    const item = base.splice(draggedIndex, 1)[0];
+    base.splice(targetIndex, 0, item);
+
+    const updates: Array<Promise<any>> = [];
+    base.forEach((t, i) => {
+      const newOrder = i + 1;
+      if (t.order !== newOrder) updates.push(updateTask(t.id, { order: newOrder }));
+    });
+
+    if (updates.length) await Promise.all(updates);
+  };
+
+  const onDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const draggedId = draggingId || e.dataTransfer?.getData('text/plain');
+    if (!draggedId || draggedId === targetId) {
+      setDraggingId(null);
+      return;
+    }
+    await reorderTasks(draggedId, targetId);
+    setDraggingId(null);
+  };
 
   const [isCompact, setIsCompact] = useLocalStorage<boolean>('tasks.compactView', false);
   const [isTableCompact, setIsTableCompact] = useLocalStorage<boolean>('tasks.compactTable', false);
-  const [sortKey, setSortKey] = useState<'title'|'dueDate'|'assignedTo'|'priority'|'status'>('dueDate');
+  const [sortKey, setSortKey] = useState<'title'|'date'|'assignedTo'|'priority'|'status'>('date');
   const [sortDir, setSortDir] = useState<'asc'|'desc'>('asc');
 
   const changeSort = (key: typeof sortKey) => {
@@ -79,11 +120,12 @@ const TasksPage: React.FC = () => {
   const categories = [
     'Algemeen',
     'Huishouden',
+    'Huis',
+    'Hobby',
+    'Financiën',
     'School',
     'Werk',
     'Gezondheid',
-    'Financiën',
-    'Hobby',
     'Onderhoud'
   ];
 
@@ -111,7 +153,16 @@ const TasksPage: React.FC = () => {
 
     // Assignee filter
     if (assigneeFilter !== 'all') {
-      filtered = filtered.filter(task => task.assignedTo === assigneeFilter);
+      if (assigneeFilter === '') {
+        filtered = filtered.filter(task => !task.assignedTo || task.assignedTo.length === 0);
+      } else {
+        filtered = filtered.filter(task => task.assignedTo && task.assignedTo.includes(assigneeFilter));
+      }
+    }
+
+    // Category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(task => task.categories && task.categories.includes(categoryFilter));
     }
 
     return filtered.sort((a, b) => {
@@ -127,16 +178,10 @@ const TasksPage: React.FC = () => {
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       }
       
-      // Finally by due date
-      if (a.dueDate && b.dueDate) {
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      }
-      if (a.dueDate) return -1;
-      if (b.dueDate) return 1;
-      
+      // Fallback to creation date
       return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
     });
-  }, [tasks, searchTerm, statusFilter, priorityFilter, assigneeFilter]);
+  }, [tasks, searchTerm, statusFilter, priorityFilter, assigneeFilter, categoryFilter]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -144,13 +189,7 @@ const TasksPage: React.FC = () => {
     const pending = tasks.filter(task => task.status === 'pending').length;
     const inProgress = tasks.filter(task => task.status === 'in_progress').length;
     const completed = tasks.filter(task => task.status === 'completed').length;
-    const overdue = tasks.filter(task => 
-      task.dueDate && 
-      task.status !== 'completed' && 
-      isPast(parseISO(task.dueDate))
-    ).length;
-
-    return { total, pending, inProgress, completed, overdue };
+    return { total, pending, inProgress, completed };
   }, [tasks]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -158,9 +197,13 @@ const TasksPage: React.FC = () => {
     if (!formData.title.trim()) return;
 
     const taskData = {
-      ...formData,
-      status: 'pending' as Task['status'],
-      assignedTo: formData.assignedTo || undefined
+      title: formData.title,
+      description: formData.description,
+      assignedTo: formData.assignedTo && formData.assignedTo.length ? formData.assignedTo : undefined,
+      date: formData.date || undefined,
+      priority: formData.priority,
+      categories: formData.categories && formData.categories.length ? formData.categories : ['Algemeen'],
+      status: 'pending' as Task['status']
     };
 
     if (editingTask) {
@@ -178,10 +221,10 @@ const TasksPage: React.FC = () => {
     setFormData({
       title: '',
       description: '',
-      assignedTo: '',
-      dueDate: '',
+      assignedTo: [],
       priority: 'medium',
-      category: 'Algemeen'
+      categories: ['Algemeen'] as string[],
+      date: ''
     });
   };
 
@@ -190,10 +233,10 @@ const TasksPage: React.FC = () => {
     setFormData({
       title: task.title,
       description: task.description || '',
-      assignedTo: task.assignedTo || '',
-      dueDate: task.dueDate || '',
+      assignedTo: task.assignedTo || [],
+      date: task.date || '',
       priority: task.priority,
-      category: task.category
+      categories: task.categories || ['Algemeen']
     });
     setIsAddModalOpen(true);
   };
@@ -220,6 +263,35 @@ const TasksPage: React.FC = () => {
     return assignee?.name || 'Onbekend';
   };
 
+  const getAssigneeNames = (assigneeIds?: string[]) => {
+    if (!assigneeIds || assigneeIds.length === 0) return 'Niet toegewezen';
+    return assigneeIds.map(id => familyMembers.find(m => m.id === id)?.name || 'Onbekend').join(', ');
+  };
+
+  const moveTaskUp = async (task: Task) => {
+    const sorted = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
+    const idx = sorted.findIndex(t => t.id === task.id);
+    if (idx > 0) {
+      const other = sorted[idx - 1];
+      const aOrder = task.order || 0;
+      const bOrder = other.order || 0;
+      await updateTask(task.id, { order: bOrder });
+      await updateTask(other.id, { order: aOrder });
+    }
+  };
+
+  const moveTaskDown = async (task: Task) => {
+    const sorted = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0) || new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
+    const idx = sorted.findIndex(t => t.id === task.id);
+    if (idx < sorted.length - 1 && idx !== -1) {
+      const other = sorted[idx + 1];
+      const aOrder = task.order || 0;
+      const bOrder = other.order || 0;
+      await updateTask(task.id, { order: bOrder });
+      await updateTask(other.id, { order: aOrder });
+    }
+  };
+
   // sortedTasks depends on filteredTasks and familyMembers — define it after those are available
   const sortedTasks = useMemo(() => {
     const arr = [...filteredTasks];
@@ -230,15 +302,25 @@ const TasksPage: React.FC = () => {
       if (sortKey === 'title') {
         return a.title.localeCompare(b.title);
       }
-      if (sortKey === 'dueDate') {
-        if (a.dueDate && b.dueDate) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-        if (a.dueDate) return -1;
-        if (b.dueDate) return 1;
-        return 0;
+      if (sortKey === 'date') {
+        if (a.date && b.date) {
+          const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+          if (diff !== 0) return diff;
+        } else if (a.date) {
+          return -1;
+        } else if (b.date) {
+          return 1;
+        }
+        // if dates are equal or both missing, fall back to priority
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
       }
+
+      // 'dueDate' (deadline) removed from UI; no sorting by dueDate
       if (sortKey === 'assignedTo') {
-        const na = (familyMembers.find(m => m.id === a.assignedTo)?.name || '').toLowerCase();
-        const nb = (familyMembers.find(m => m.id === b.assignedTo)?.name || '').toLowerCase();
+        const aFirst = a.assignedTo && a.assignedTo.length ? a.assignedTo[0] : undefined;
+        const bFirst = b.assignedTo && b.assignedTo.length ? b.assignedTo[0] : undefined;
+        const na = (aFirst ? (familyMembers.find(m => m.id === aFirst)?.name || '') : '').toLowerCase();
+        const nb = (bFirst ? (familyMembers.find(m => m.id === bFirst)?.name || '') : '').toLowerCase();
         return na.localeCompare(nb);
       }
       if (sortKey === 'priority') {
@@ -254,11 +336,7 @@ const TasksPage: React.FC = () => {
     return arr;
   }, [filteredTasks, sortKey, sortDir, familyMembers]);
 
-  const isTaskOverdue = (task: Task) => {
-    return task.dueDate && 
-           task.status !== 'completed' && 
-           isPast(parseISO(task.dueDate));
-  };
+  // 'dueDate' (deadline) removed from UI; no overdue calculation on frontend
 
   return (
     <div className="tasks-page">
@@ -339,17 +417,7 @@ const TasksPage: React.FC = () => {
           </div>
         </div>
 
-        {stats.overdue > 0 && (
-          <div className="stat-card">
-            <div className="stat-icon overdue">
-              <AlertCircle size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-number">{stats.overdue}</span>
-              <span className="stat-label">Verlopen</span>
-            </div>
-          </div>
-        )}
+        {/* deadline/overdue removed from UI */}
       </div>
 
       {/* Filters */}
@@ -398,6 +466,16 @@ const TasksPage: React.FC = () => {
               <option key={member.id} value={member.id}>{member.name}</option>
             ))}
           </select>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="all">Alle categorieën</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -428,7 +506,7 @@ const TasksPage: React.FC = () => {
                 <thead>
                   <tr>
                     <th><button type="button" onClick={() => changeSort('title')}>Titel{sortKey==='title' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
-                    <th><button type="button" onClick={() => changeSort('dueDate')}>Deadline{sortKey==='dueDate' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
+                    <th><button type="button" onClick={() => changeSort('date')}>Datum{sortKey==='date' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
                     <th><button type="button" onClick={() => changeSort('assignedTo')}>Persoon{sortKey==='assignedTo' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
                     <th><button type="button" onClick={() => changeSort('priority')}>Prioriteit{sortKey==='priority' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
                     <th><button type="button" onClick={() => changeSort('status')}>Status{sortKey==='status' ? (sortDir==='asc' ? ' ▲' : ' ▼') : ''}</button></th>
@@ -437,18 +515,24 @@ const TasksPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {sortedTasks.map(task => {
-                    const isOverdue = isTaskOverdue(task);
-                    const assignee = familyMembers.find(member => member.id === task.assignedTo);
+                    const isOverdue = false; // overdue not used (deadline removed)
                     return (
-                      <tr key={task.id} className={`${task.status} ${isOverdue ? 'overdue' : ''}`}>
+                      <tr
+                        key={task.id}
+                        className={`${task.status}`}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, task.id)}
+                        onDragOver={onDragOver}
+                        onDrop={(e) => onDrop(e, task.id)}
+                      >
                         <td className="td-title">
                           <div className="title-wrap">
                             <span className="title-text">{task.title}</span>
-                            <span className="category-text">{task.category}</span>
+                                <span className="category-text">{(task.categories || []).join(', ')}</span>
                           </div>
                         </td>
-                        <td className="td-date">{task.dueDate ? format(parseISO(task.dueDate), 'dd MMM', { locale: nl }) : '-'}</td>
-                        <td className="td-assignee">{task.assignedTo && assignee ? assignee.name : '—'}</td>
+                        <td className="td-date">{task.date ? format(parseISO(task.date), 'dd MMM', { locale: nl }) : '-'}</td>
+                            <td className="td-assignee">{task.assignedTo && task.assignedTo.length ? getAssigneeNames(task.assignedTo) : '—'}</td>
                         <td className="td-priority">{priorityLabels[task.priority]}</td>
                         <td className="td-status">
                           <select
@@ -473,15 +557,18 @@ const TasksPage: React.FC = () => {
             </div>
           ) : (
             <div className="tasks-grid">
-              {filteredTasks.map(task => {
-                const isOverdue = isTaskOverdue(task);
-                const assignee = familyMembers.find(member => member.id === task.assignedTo);
+                  {filteredTasks.map(task => {
+                  const isOverdue = false;
 
-                return (
-                  <div 
-                    key={task.id} 
-                    className={`task-card ${task.status} ${isOverdue ? 'overdue' : ''}`}
-                  >
+                  return (
+                    <div 
+                      key={task.id} 
+                      className={`task-card ${task.status}`}
+                      draggable
+                      onDragStart={(e) => onDragStart(e, task.id)}
+                      onDragOver={onDragOver}
+                      onDrop={(e) => onDrop(e, task.id)}
+                    >
                     <div className="task-header">
                       <div className="task-priority">
                         <div 
@@ -489,7 +576,7 @@ const TasksPage: React.FC = () => {
                           style={{ backgroundColor: priorityColors[task.priority] }}
                           title={`Prioriteit: ${priorityLabels[task.priority]}`}
                         />
-                        <span className="task-category">{task.category}</span>
+                        <span className="task-category">{(task.categories || []).join(', ')}</span>
                       </div>
                       
                       <div className="task-actions">
@@ -518,27 +605,25 @@ const TasksPage: React.FC = () => {
                     </div>
 
                     <div className="task-details">
-                      {task.dueDate && (
-                        <div className={`task-detail ${isOverdue ? 'overdue' : ''}`}>
+                      {task.date && (
+                        <div className="task-detail">
                           <Calendar size={16} />
                           <span>
-                            {format(parseISO(task.dueDate), 'dd MMM yyyy', { locale: nl })}
-                            {isOverdue && ' (verlopen)'}
+                            {format(parseISO(task.date), 'dd MMM yyyy', { locale: nl })}
                           </span>
                         </div>
                       )}
                       
-                      {task.assignedTo && assignee && (
+                      {task.assignedTo && task.assignedTo.length > 0 && (
                         <div className="task-detail">
                           <User size={16} />
-                          <span 
-                            className="assignee"
-                            style={{ 
-                              backgroundColor: `${assignee.color}20`, 
-                              color: assignee.color 
-                            }}
-                          >
-                            {assignee.name}
+                          <span className="assignee-multi">
+                            {task.assignedTo?.map(id => {
+                              const a = familyMembers.find(m => m.id === id);
+                              return (
+                                <span key={id} className="assignee" style={{ backgroundColor: `${a?.color}20`, color: a?.color }}>{a?.name}</span>
+                              );
+                            })}
                           </span>
                         </div>
                       )}
@@ -608,11 +693,15 @@ const TasksPage: React.FC = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="category">Categorie *</label>
+                  <label htmlFor="category">Categorie(s) *</label>
                   <select
                     id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    multiple
+                    value={formData.categories}
+                    onChange={(e) => {
+                      const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+                      setFormData({ ...formData, categories: opts });
+                    }}
                     required
                   >
                     {categories.map(category => (
@@ -641,27 +730,32 @@ const TasksPage: React.FC = () => {
                   <label htmlFor="assignedTo">Toegewezen aan</label>
                   <select
                     id="assignedTo"
+                    multiple
                     value={formData.assignedTo}
-                    onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
+                    onChange={(e) => {
+                      const opts = Array.from(e.target.selectedOptions).map(o => o.value);
+                      setFormData({ ...formData, assignedTo: opts });
+                    }}
                   >
-                    <option value="">Niet toegewezen</option>
                     {familyMembers.map(member => (
                       <option key={member.id} value={member.id}>{member.name}</option>
                     ))}
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="dueDate">Deadline</label>
-                  <input
-                    type="date"
-                    id="dueDate"
-                    value={formData.dueDate}
-                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                  />
                 </div>
-              </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="date">Datum (optioneel)</label>
+                    <input
+                      type="date"
+                      id="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    />
+                  </div>
+                </div>
 
               <div className="modal-actions">
                 <button type="button" className="cancel-button" onClick={closeModal}>

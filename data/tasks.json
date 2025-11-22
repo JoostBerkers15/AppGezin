@@ -3,11 +3,17 @@
     "id": "1763587456139",
     "title": "Trap schilderen",
     "description": "Trap schuren\nTrap verven\nSchilder laten kijken",
-    "assignedTo": "1",
+    "assignedTo": [
+      "1"
+    ],
     "priority": "low",
     "status": "pending",
+    "date": null,
     "dueDate": "2026-02-20",
-    "category": "Onderhoud",
+    "categories": [
+      "Onderhoud"
+    ],
+    "order": 1,
     "createdDate": "2025-11-19T21:24:16.139Z",
     "completedDate": null
   },
@@ -15,11 +21,17 @@
     "id": "1763800617565",
     "title": "Dekbed checken",
     "description": "",
-    "assignedTo": "1",
+    "assignedTo": [
+      "1"
+    ],
     "priority": "high",
     "status": "pending",
+    "date": "2025-11-22",
     "dueDate": "2025-11-23",
-    "category": "Huishouden",
+    "categories": [
+      "Huishouden"
+    ],
+    "order": 7,
     "createdDate": "2025-11-22T08:36:57.565Z",
     "completedDate": null
   },
@@ -27,11 +39,17 @@
     "id": "1763801009385",
     "title": "Kerstboom",
     "description": "Halen en opzetten",
-    "assignedTo": "1",
+    "assignedTo": [
+      "1"
+    ],
     "priority": "medium",
     "status": "pending",
+    "date": "2025-11-24",
     "dueDate": "2025-11-29",
-    "category": "Algemeen",
+    "categories": [
+      "Algemeen"
+    ],
+    "order": 2,
     "createdDate": "2025-11-22T08:43:29.385Z",
     "completedDate": null
   },
@@ -39,11 +57,17 @@
     "id": "1763801111869",
     "title": "App fixen",
     "description": "",
-    "assignedTo": "1",
+    "assignedTo": [
+      "1"
+    ],
     "priority": "medium",
     "status": "pending",
-    "dueDate": "",
-    "category": "Algemeen",
+    "date": null,
+    "dueDate": null,
+    "categories": [
+      "Algemeen"
+    ],
+    "order": 3,
     "createdDate": "2025-11-22T08:45:11.869Z",
     "completedDate": null
   },
@@ -54,8 +78,12 @@
     "assignedTo": null,
     "priority": "high",
     "status": "pending",
-    "dueDate": "",
-    "category": "Huishouden",
+    "date": "2025-11-22",
+    "dueDate": null,
+    "categories": [
+      "Huishouden"
+    ],
+    "order": 4,
     "createdDate": "2025-11-22T09:00:17.436Z",
     "completedDate": null
   },
@@ -66,8 +94,12 @@
     "assignedTo": null,
     "priority": "medium",
     "status": "pending",
-    "dueDate": "",
-    "category": "Onderhoud",
+    "date": null,
+    "dueDate": null,
+    "categories": [
+      "Onderhoud"
+    ],
+    "order": 5,
     "createdDate": "2025-11-22T09:00:40.774Z",
     "completedDate": null
   },
@@ -78,8 +110,12 @@
     "assignedTo": null,
     "priority": "medium",
     "status": "pending",
-    "dueDate": "",
-    "category": "Onderhoud",
+    "date": null,
+    "dueDate": null,
+    "categories": [
+      "Onderhoud"
+    ],
+    "order": 6,
     "createdDate": "2025-11-22T09:00:56.670Z",
     "completedDate": null
   },
@@ -90,8 +126,12 @@
     "assignedTo": null,
     "priority": "medium",
     "status": "pending",
-    "dueDate": "",
-    "category": "Financiën",
+    "date": null,
+    "dueDate": null,
+    "categories": [
+      "Financiën"
+    ],
+    "order": 8,
     "createdDate": "2025-11-22T09:01:36.471Z",
     "completedDate": null
   },
@@ -102,8 +142,12 @@
     "assignedTo": null,
     "priority": "medium",
     "status": "pending",
-    "dueDate": "",
-    "category": "Onderhoud",
+    "date": null,
+    "dueDate": null,
+    "categories": [
+      "Onderhoud"
+    ],
+    "order": 9,
     "createdDate": "2025-11-22T09:01:51.755Z",
     "completedDate": null
   },
@@ -111,11 +155,17 @@
     "id": "1763802129253",
     "title": "Felle lampen halen",
     "description": "",
-    "assignedTo": "1",
+    "assignedTo": [
+      "1"
+    ],
     "priority": "medium",
     "status": "pending",
+    "date": "2025-11-22",
     "dueDate": "2025-11-23",
-    "category": "Onderhoud",
+    "categories": [
+      "Onderhoud"
+    ],
+    "order": 13,
     "createdDate": "2025-11-22T09:02:09.253Z",
     "completedDate": null
   },
@@ -123,11 +173,17 @@
     "id": "1763802163436",
     "title": "Stopcontact slaapkamer bestellen",
     "description": "",
-    "assignedTo": "1",
+    "assignedTo": [
+      "1"
+    ],
     "priority": "medium",
     "status": "pending",
-    "dueDate": "",
-    "category": "Algemeen",
+    "date": null,
+    "dueDate": null,
+    "categories": [
+      "Algemeen"
+    ],
+    "order": 11,
     "createdDate": "2025-11-22T09:02:43.436Z",
     "completedDate": null
   },
@@ -135,11 +191,17 @@
     "id": "1763802177497",
     "title": "Kerst spullen uitpakken",
     "description": "",
-    "assignedTo": "2",
+    "assignedTo": [
+      "2"
+    ],
     "priority": "medium",
     "status": "pending",
-    "dueDate": "",
-    "category": "Algemeen",
+    "date": null,
+    "dueDate": null,
+    "categories": [
+      "Algemeen"
+    ],
+    "order": 10,
     "createdDate": "2025-11-22T09:02:57.497Z",
     "completedDate": null
   },
@@ -147,11 +209,17 @@
     "id": "1763822560584",
     "title": "Meloen eten",
     "description": "",
-    "assignedTo": "2",
+    "assignedTo": [
+      "2"
+    ],
     "priority": "medium",
     "status": "pending",
+    "date": "2025-11-25",
     "dueDate": "2025-11-26",
-    "category": "Huishouden",
+    "categories": [
+      "Huishouden"
+    ],
+    "order": 12,
     "createdDate": "2025-11-22T14:42:40.584Z",
     "completedDate": null
   }

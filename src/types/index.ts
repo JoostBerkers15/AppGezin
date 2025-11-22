@@ -75,11 +75,13 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  assignedTo?: string; // FamilyMember ID
+  assignedTo?: string[]; // FamilyMember IDs
   dueDate?: string;
   priority: 'low' | 'medium' | 'high';
   status: 'pending' | 'in_progress' | 'completed';
-  category: string;
+  categories: string[];
+  date?: string;
+  order?: number;
   createdDate: string;
   completedDate?: string;
 }
