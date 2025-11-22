@@ -54,7 +54,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) 
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-            <h1 className="app-title">Gezin App</h1>
+            <h1 className="app-title">Gezin app</h1>
           </div>
           
           <div className="header-right">
