@@ -117,9 +117,7 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        <div className="login-footer">
-          <p>Standaard inloggegevens staan in de .env file</p>
-        </div>
+        {/* login-footer verwijderd, tekst over standaard inloggegevens weggehaald */}
       </div>
     </div>
   );
