@@ -209,6 +209,8 @@ const TasksPage: React.FC = () => {
     if (editingTask) {
       updateTask(editingTask.id, taskData);
       setEditingTask(null);
+    } else {
+      addTask(taskData);
     }
 
     resetForm();
