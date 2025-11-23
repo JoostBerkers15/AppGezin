@@ -37,7 +37,7 @@ const ShoppingPage: React.FC = () => {
     category: '',
     quantity: 1,
     unit: 'stuks',
-    inStock: true
+    instock: true
   });
 
   const units = ['stuks', 'kg', 'gram', 'liter', 'ml', 'pakken', 'blikken', 'flessen'];
@@ -60,18 +60,18 @@ const ShoppingPage: React.FC = () => {
 
     // Completed filter
     if (!showCompleted) {
-      filtered = filtered.filter(item => !item.isCompleted);
+      filtered = filtered.filter(item => !item.iscompleted);
     }
 
     // Out of stock filter
     if (!showOutOfStock) {
-      filtered = filtered.filter(item => item.inStock);
+      filtered = filtered.filter(item => item.instock);
     }
 
     return filtered.sort((a, b) => {
       // Sort by completion status first, then by name
-      if (a.isCompleted !== b.isCompleted) {
-        return a.isCompleted ? 1 : -1;
+      if (a.iscompleted !== b.iscompleted) {
+        return a.iscompleted ? 1 : -1;
       }
       return a.name.localeCompare(b.name);
     });
@@ -94,8 +94,8 @@ const ShoppingPage: React.FC = () => {
   // Statistics
   const stats = useMemo(() => {
     const total = shoppingItems.length;
-    const completed = shoppingItems.filter(item => item.isCompleted).length;
-    const outOfStock = shoppingItems.filter(item => !item.inStock).length;
+    const completed = shoppingItems.filter(item => item.iscompleted).length;
+    const outOfStock = shoppingItems.filter(item => !item.instock).length;
     const pending = total - completed;
 
     return { total, completed, outOfStock, pending };
@@ -107,7 +107,7 @@ const ShoppingPage: React.FC = () => {
 
     const itemData = {
       ...formData,
-      isCompleted: false
+      iscompleted: false
     };
 
     if (editingItem) {
@@ -127,7 +127,7 @@ const ShoppingPage: React.FC = () => {
       category: '',
       quantity: 1,
       unit: 'stuks',
-      inStock: true
+      instock: true
     });
   };
 
@@ -138,7 +138,7 @@ const ShoppingPage: React.FC = () => {
       category: item.category,
       quantity: item.quantity,
       unit: item.unit,
-      inStock: item.inStock
+      instock: item.instock
     });
     setIsAddModalOpen(true);
   };
@@ -149,12 +149,12 @@ const ShoppingPage: React.FC = () => {
     }
   };
 
-  const toggleCompleted = (id: string, isCompleted: boolean) => {
-    updateShoppingItem(id, { isCompleted: !isCompleted });
+  const toggleCompleted = (id: string, iscompleted: boolean) => {
+    updateShoppingItem(id, { iscompleted: !iscompleted });
   };
 
-  const toggleInStock = (id: string, inStock: boolean) => {
-    updateShoppingItem(id, { inStock: !inStock });
+  const toggleInStock = (id: string, instock: boolean) => {
+    updateShoppingItem(id, { instock: !instock });
   };
 
   const closeModal = () => {
@@ -169,7 +169,7 @@ const ShoppingPage: React.FC = () => {
   };
 
   const clearCompleted = () => {
-    const completedItems = shoppingItems.filter(item => item.isCompleted);
+    const completedItems = shoppingItems.filter(item => item.iscompleted);
     if (completedItems.length === 0) return;
     
     if (window.confirm(`Weet je zeker dat je ${completedItems.length} afgevinkte items wilt verwijderen?`)) {
@@ -324,15 +324,15 @@ const ShoppingPage: React.FC = () => {
                 {items.map(item => (
                   <div 
                     key={item.id} 
-                    className={`item-card ${item.isCompleted ? 'completed' : ''} ${!item.inStock ? 'out-of-stock' : ''}`}
+                    className={`item-card ${item.iscompleted ? 'completed' : ''} ${!item.instock ? 'out-of-stock' : ''}`}
                   >
                     <div className="item-main">
                       <button
-                        className={`check-button ${item.isCompleted ? 'checked' : ''}`}
-                        onClick={() => toggleCompleted(item.id, item.isCompleted)}
-                        aria-label={item.isCompleted ? 'Markeer als niet gekocht' : 'Markeer als gekocht'}
+                        className={`check-button ${item.iscompleted ? 'checked' : ''}`}
+                        onClick={() => toggleCompleted(item.id, item.iscompleted)}
+                        aria-label={item.iscompleted ? 'Markeer als niet gekocht' : 'Markeer als gekocht'}
                       >
-                        {item.isCompleted && <Check size={16} />}
+                        {item.iscompleted && <Check size={16} />}
                       </button>
                       
                       <div className="item-info">
@@ -342,11 +342,11 @@ const ShoppingPage: React.FC = () => {
                       
                       <div className="item-status">
                         <button
-                          className={`stock-button ${item.inStock ? 'in-stock' : 'out-of-stock'}`}
-                          onClick={() => toggleInStock(item.id, item.inStock)}
-                          title={item.inStock ? 'Markeer als op' : 'Markeer als voorradig'}
+                          className={`stock-button ${item.instock ? 'in-stock' : 'out-of-stock'}`}
+                          onClick={() => toggleInStock(item.id, item.instock)}
+                          title={item.instock ? 'Markeer als op' : 'Markeer als voorradig'}
                         >
-                          {item.inStock ? <Package size={16} /> : <PackageX size={16} />}
+                          {item.instock ? <Package size={16} /> : <PackageX size={16} />}
                         </button>
                       </div>
                     </div>
@@ -448,8 +448,8 @@ const ShoppingPage: React.FC = () => {
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={formData.inStock}
-                    onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
+                    checked={formData.instock}
+                    onChange={(e) => setFormData({ ...formData, instock: e.target.checked })}
                   />
                   <span>Momenteel op voorraad</span>
                 </label>

@@ -32,12 +32,12 @@ const SleepoverPage: React.FC = () => {
   const [timeFilter, setTimeFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   
   const [formData, setFormData] = useState({
-    childId: '',
+    childid: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     location: '',
-    hostName: '',
+    hostname: '',
     notes: '',
-    pickupTime: ''
+    pickuptime: ''
   });
 
   // Get children only
@@ -49,7 +49,7 @@ const SleepoverPage: React.FC = () => {
 
     // Child filter
     if (selectedChild !== 'all') {
-      filtered = filtered.filter(sleepover => sleepover.childId === selectedChild);
+      filtered = filtered.filter(sleepover => sleepover.childid === selectedChild);
     }
 
     // Time filter
@@ -78,7 +78,7 @@ const SleepoverPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.childId || !formData.location.trim() || !formData.hostName.trim()) return;
+    if (!formData.childid || !formData.location.trim() || !formData.hostname.trim()) return;
 
     if (editingSleepover) {
       updateSleepover(editingSleepover.id, formData);
@@ -93,24 +93,24 @@ const SleepoverPage: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      childId: '',
+      childid: '',
       date: format(new Date(), 'yyyy-MM-dd'),
       location: '',
-      hostName: '',
+      hostname: '',
       notes: '',
-      pickupTime: ''
+      pickuptime: ''
     });
   };
 
   const handleEdit = (sleepover: Sleepover) => {
     setEditingSleepover(sleepover);
     setFormData({
-      childId: sleepover.childId,
+      childid: sleepover.childid,
       date: sleepover.date,
       location: sleepover.location,
-      hostName: sleepover.hostName,
+      hostname: sleepover.hostname,
       notes: sleepover.notes || '',
-      pickupTime: sleepover.pickupTime || ''
+      pickuptime: sleepover.pickuptime || ''
     });
     setIsAddModalOpen(true);
   };
@@ -248,25 +248,25 @@ const SleepoverPage: React.FC = () => {
         ) : (
           <div className="sleepovers-grid">
             {filteredSleepovers.map(sleepover => {
-              const child = familyMembers.find(member => member.id === sleepover.childId);
+              const child = familyMembers.find(member => member.id === sleepover.childid);
               const isUpcoming = isFuture(parseISO(sleepover.date));
 
               return (
                 <div 
                   key={sleepover.id} 
                   className={`sleepover-card ${isUpcoming ? 'upcoming' : 'past'}`}
-                  style={{ borderLeftColor: getChildColor(sleepover.childId) }}
+                  style={{ borderLeftColor: getChildColor(sleepover.childid) }}
                 >
                   <div className="sleepover-header">
                     <div className="child-info">
                       <div 
                         className="child-avatar"
-                        style={{ backgroundColor: getChildColor(sleepover.childId) }}
+                        style={{ backgroundColor: getChildColor(sleepover.childid) }}
                       >
-                        {getChildName(sleepover.childId).charAt(0)}
+                        {getChildName(sleepover.childid).charAt(0)}
                       </div>
                       <div>
-                        <h3>{getChildName(sleepover.childId)}</h3>
+                        <h3>{getChildName(sleepover.childid)}</h3>
                         <span className={`status ${isUpcoming ? 'upcoming' : 'past'}`}>
                           {isUpcoming ? 'Komend' : 'Afgelopen'}
                         </span>
@@ -304,13 +304,13 @@ const SleepoverPage: React.FC = () => {
                     
                     <div className="detail-item">
                       <User size={16} />
-                      <span>Bij {sleepover.hostName}</span>
+                      <span>Bij {sleepover.hostname}</span>
                     </div>
                     
-                    {sleepover.pickupTime && (
+                    {sleepover.pickuptime && (
                       <div className="detail-item">
                         <Clock size={16} />
-                        <span>Ophalen om {sleepover.pickupTime}</span>
+                        <span>Ophalen om {sleepover.pickuptime}</span>
                       </div>
                     )}
                   </div>
@@ -343,8 +343,8 @@ const SleepoverPage: React.FC = () => {
                 <label htmlFor="childId">Kind *</label>
                 <select
                   id="childId"
-                  value={formData.childId}
-                  onChange={(e) => setFormData({ ...formData, childId: e.target.value })}
+                  value={formData.childid}
+                  onChange={(e) => setFormData({ ...formData, childid: e.target.value })}
                   required
                 >
                   <option value="">Selecteer een kind</option>
@@ -373,8 +373,8 @@ const SleepoverPage: React.FC = () => {
                   <input
                     type="time"
                     id="pickupTime"
-                    value={formData.pickupTime}
-                    onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
+                    value={formData.pickuptime}
+                    onChange={(e) => setFormData({ ...formData, pickuptime: e.target.value })}
                   />
                 </div>
               </div>
@@ -396,8 +396,8 @@ const SleepoverPage: React.FC = () => {
                 <input
                   type="text"
                   id="hostName"
-                  value={formData.hostName}
-                  onChange={(e) => setFormData({ ...formData, hostName: e.target.value })}
+                  value={formData.hostname}
+                  onChange={(e) => setFormData({ ...formData, hostname: e.target.value })}
                   placeholder="Bijv. Oma, Familie Jansen, Lisa's ouders..."
                   required
                 />

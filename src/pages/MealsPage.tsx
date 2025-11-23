@@ -36,14 +36,14 @@ const MealsPage: React.FC = () => {
   
   const [formData, setFormData] = useState({
     date: format(new Date(), 'yyyy-MM-dd'),
-    mealType: 'dinner' as Meal['mealType'],
+    mealtype: 'dinner' as Meal['mealtype'],
     dish: '',
     location: 'home' as Meal['location'],
-    locationDetails: '',
+    locationdetails: '',
     participants: [] as string[],
     recurring: {
       frequency: 'weekly' as 'daily' | 'weekly' | 'monthly',
-      endDate: ''
+      enddate: ''
     }
   });
 
@@ -84,7 +84,7 @@ const MealsPage: React.FC = () => {
 
   // Group meals by day and meal type
   const mealsByDay = useMemo(() => {
-    const grouped: Record<string, Record<Meal['mealType'], Meal[]>> = {};
+    const grouped: Record<string, Record<Meal['mealtype'], Meal[]>> = {};
     
     weekDays.forEach(day => {
       const dayKey = format(day, 'yyyy-MM-dd');
@@ -99,7 +99,7 @@ const MealsPage: React.FC = () => {
     weekMeals.forEach(meal => {
       const dayKey = meal.date;
       if (grouped[dayKey]) {
-        grouped[dayKey][meal.mealType].push(meal);
+        grouped[dayKey][meal.mealtype].push(meal);
       }
     });
 
@@ -113,7 +113,7 @@ const MealsPage: React.FC = () => {
     const mealData = {
       ...formData,
       participants: formData.participants.length > 0 ? formData.participants : [],
-      recurring: formData.recurring.endDate ? formData.recurring : undefined
+      recurring: formData.recurring.enddate ? formData.recurring : undefined
     };
 
     if (editingMeal) {
@@ -123,14 +123,15 @@ const MealsPage: React.FC = () => {
       // If recurring, create multiple meals
       if (mealData.recurring) {
         const startDate = parseISO(mealData.date);
-        const endDate = parseISO(mealData.recurring.endDate);
+        const endDate = parseISO(mealData.recurring.enddate);
         let currentDate = startDate;
 
         while (currentDate <= endDate) {
           addMeal({
             ...mealData,
             date: format(currentDate, 'yyyy-MM-dd'),
-            recurring: undefined // Don't store recurring info in individual meals
+            recurring: undefined, // Don't store recurring info in individual meals
+            createddate: new Date().toISOString()
           });
 
           // Increment based on frequency
@@ -147,7 +148,10 @@ const MealsPage: React.FC = () => {
           }
         }
       } else {
-        addMeal(mealData);
+        addMeal({
+          ...mealData,
+          createddate: new Date().toISOString()
+        });
       }
     }
 
@@ -158,14 +162,14 @@ const MealsPage: React.FC = () => {
   const resetForm = () => {
     setFormData({
       date: format(new Date(), 'yyyy-MM-dd'),
-      mealType: 'dinner',
+      mealtype: 'dinner',
       dish: '',
       location: 'home',
-      locationDetails: '',
+      locationdetails: '',
       participants: [],
       recurring: {
         frequency: 'weekly',
-        endDate: ''
+        enddate: ''
       }
     });
   };
@@ -174,17 +178,17 @@ const MealsPage: React.FC = () => {
     setEditingMeal(meal);
     setFormData({
       date: meal.date,
-      mealType: meal.mealType,
+      mealtype: meal.mealtype,
       dish: meal.dish,
       location: meal.location,
-      locationDetails: meal.locationDetails || '',
+      locationdetails: meal.locationdetails || '',
       participants: meal.participants,
       recurring: meal.recurring ? {
         frequency: meal.recurring.frequency,
-        endDate: meal.recurring.endDate || ''
+        enddate: meal.recurring.enddate || ''
       } : {
         frequency: 'weekly',
-        endDate: ''
+        enddate: ''
       }
     });
     setIsAddModalOpen(true);
@@ -282,8 +286,8 @@ const MealsPage: React.FC = () => {
 
                   <div className="meal-slots">
                     {Object.entries(mealTypeLabels).map(([type, label]) => {
-                      const IconComponent = mealTypeIcons[type as Meal['mealType']];
-                      const typeMeals = dayMeals[type as Meal['mealType']];
+                      const IconComponent = mealTypeIcons[type as Meal['mealtype']];
+                      const typeMeals = dayMeals[type as Meal['mealtype']];
 
                       return (
                         <div key={type} className="meal-slot">
@@ -299,7 +303,7 @@ const MealsPage: React.FC = () => {
                                 setFormData(prev => ({
                                   ...prev,
                                   date: dayKey,
-                                  mealType: type as Meal['mealType']
+                                  mealtype: type as Meal['mealtype']
                                 }));
                                 setIsAddModalOpen(true);
                               }}
@@ -323,7 +327,7 @@ const MealsPage: React.FC = () => {
                                           <MapPin size={12} />
                                           <span>
                                             {locationLabels[meal.location]}
-                                            {meal.locationDetails && ` - ${meal.locationDetails}`}
+                                            {meal.locationdetails && ` - ${meal.locationdetails}`}
                                           </span>
                                         </div>
                                       )}
@@ -394,7 +398,7 @@ const MealsPage: React.FC = () => {
               meals
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .map(meal => {
-                  const IconComponent = mealTypeIcons[meal.mealType];
+                  const IconComponent = mealTypeIcons[meal.mealtype];
                   const mealParticipants = familyMembers.filter(member => 
                     meal.participants.includes(member.id)
                   );
@@ -404,7 +408,7 @@ const MealsPage: React.FC = () => {
                       <div className="meal-header">
                         <div className="meal-type">
                           <IconComponent size={20} />
-                          <span>{mealTypeLabels[meal.mealType]}</span>
+                          <span>{mealTypeLabels[meal.mealtype]}</span>
                         </div>
                         <div className="meal-date">
                           <Calendar size={16} />
@@ -421,7 +425,7 @@ const MealsPage: React.FC = () => {
                               <MapPin size={16} />
                               <span>
                                 {locationLabels[meal.location]}
-                                {meal.locationDetails && ` - ${meal.locationDetails}`}
+                                {meal.locationdetails && ` - ${meal.locationdetails}`}
                               </span>
                             </div>
                           )}
@@ -498,8 +502,8 @@ const MealsPage: React.FC = () => {
                   <label htmlFor="mealType">Maaltijd *</label>
                   <select
                     id="mealType"
-                    value={formData.mealType}
-                    onChange={(e) => setFormData({ ...formData, mealType: e.target.value as Meal['mealType'] })}
+                    value={formData.mealtype}
+                    onChange={(e) => setFormData({ ...formData, mealtype: e.target.value as Meal['mealtype'] })}
                     required
                   >
                     {Object.entries(mealTypeLabels).map(([value, label]) => (
@@ -542,8 +546,8 @@ const MealsPage: React.FC = () => {
                     <input
                       type="text"
                       id="locationDetails"
-                      value={formData.locationDetails}
-                      onChange={(e) => setFormData({ ...formData, locationDetails: e.target.value })}
+                      value={formData.locationdetails}
+                      onChange={(e) => setFormData({ ...formData, locationdetails: e.target.value })}
                       placeholder="Specificeer de locatie..."
                     />
                   </div>
@@ -588,12 +592,12 @@ const MealsPage: React.FC = () => {
                     <label className="checkbox-label">
                       <input
                         type="checkbox"
-                        checked={!!formData.recurring.endDate}
+                        checked={!!formData.recurring.enddate}
                         onChange={(e) => setFormData({
                           ...formData,
                           recurring: {
                             ...formData.recurring,
-                            endDate: e.target.checked ? format(addDays(parseISO(formData.date), 30), 'yyyy-MM-dd') : ''
+                            enddate: e.target.checked ? format(addDays(parseISO(formData.date), 30), 'yyyy-MM-dd') : ''
                           }
                         })}
                       />
@@ -602,7 +606,7 @@ const MealsPage: React.FC = () => {
                     </label>
                   </div>
 
-                  {formData.recurring.endDate && (
+                  {formData.recurring.enddate && (
                     <div className="form-row">
                       <div className="form-group">
                         <label htmlFor="frequency">Frequentie</label>
@@ -628,12 +632,12 @@ const MealsPage: React.FC = () => {
                         <input
                           type="date"
                           id="endDate"
-                          value={formData.recurring.endDate}
+                          value={formData.recurring.enddate}
                           onChange={(e) => setFormData({
                             ...formData,
                             recurring: {
                               ...formData.recurring,
-                              endDate: e.target.value
+                              enddate: e.target.value
                             }
                           })}
                           min={formData.date}

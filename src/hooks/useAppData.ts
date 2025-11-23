@@ -162,12 +162,12 @@ export const useAppData = () => {
   // SHOPPING ITEMS
   // ============================================================================
 
-  const addShoppingItem = async (item: Omit<ShoppingItem, 'id' | 'addedDate'>) => {
+  const addShoppingItem = async (item: Omit<ShoppingItem, 'id' | 'addeddate'>) => {
     try {
       const newItem: ShoppingItem = {
         ...item,
         id: Date.now().toString(),
-        addedDate: new Date().toISOString()
+        addeddate: new Date().toISOString()
       };
       const response = await shoppingItemsApi.create(newItem);
       if (response) setShoppingItems(prev => [...prev, response]);
@@ -184,10 +184,10 @@ export const useAppData = () => {
       if (!existing) return;
       
       const updatedItem = { ...existing, ...updates };
-      if (updates.isCompleted && !existing.isCompleted) {
-        updatedItem.completedDate = new Date().toISOString();
-      } else if (updates.isCompleted === false) {
-        updatedItem.completedDate = undefined;
+      if (updates.iscompleted && !existing.iscompleted) {
+        updatedItem.completeddate = new Date().toISOString();
+      } else if (updates.iscompleted === false) {
+        updatedItem.completeddate = undefined;
       }
       
       await shoppingItemsApi.update(id, updatedItem);
@@ -323,12 +323,12 @@ export const useAppData = () => {
   // TASKS
   // ============================================================================
 
-  const addTask = async (task: Omit<Task, 'id' | 'createdDate'>) => {
+  const addTask = async (task: Omit<Task, 'id' | 'createddate'>) => {
     try {
       const newTask: Task = {
         ...task,
         id: Date.now().toString(),
-        createdDate: new Date().toISOString()
+        createddate: new Date().toISOString()
       };
       const response = await tasksApi.create(newTask);
       if (response) setTasks(prev => [...prev, response]);
@@ -346,9 +346,9 @@ export const useAppData = () => {
       
       const updatedTask = { ...existing, ...updates };
       if (updates.status === 'completed' && existing.status !== 'completed') {
-        updatedTask.completedDate = new Date().toISOString();
+        updatedTask.completeddate = new Date().toISOString();
       } else if (updates.status !== 'completed') {
-        updatedTask.completedDate = undefined;
+        updatedTask.completeddate = undefined;
       }
       
       await tasksApi.update(id, updatedTask);
