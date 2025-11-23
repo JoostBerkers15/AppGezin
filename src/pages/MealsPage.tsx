@@ -110,32 +110,34 @@ const MealsPage: React.FC = () => {
     e.preventDefault();
     if (!formData.dish.trim()) return;
 
-    const mealData = {
-      ...formData,
-      participants: formData.participants.length > 0 ? formData.participants : [],
-      recurring: formData.recurring.enddate ? formData.recurring : undefined
-    };
-
     if (editingMeal) {
+      const mealData = {
+        ...formData,
+        participants: formData.participants.length > 0 ? formData.participants : [],
+        recurring: formData.recurring.enddate ? JSON.stringify(formData.recurring) : undefined
+      };
       updateMeal(editingMeal.id, mealData);
       setEditingMeal(null);
     } else {
       // If recurring, create multiple meals
-      if (mealData.recurring) {
-        const startDate = parseISO(mealData.date);
-        const endDate = parseISO(mealData.recurring.enddate);
+      if (formData.recurring.enddate) {
+        const startDate = parseISO(formData.date);
+        const endDate = parseISO(formData.recurring.enddate);
         let currentDate = startDate;
 
         while (currentDate <= endDate) {
           addMeal({
-            ...mealData,
+            mealtype: formData.mealtype,
+            dish: formData.dish,
+            location: formData.location,
+            locationdetails: formData.locationdetails,
+            participants: formData.participants.length > 0 ? formData.participants : [],
             date: format(currentDate, 'yyyy-MM-dd'),
-            recurring: undefined, // Don't store recurring info in individual meals
-            createddate: new Date().toISOString()
+            recurring: undefined // Don't store recurring info in individual meals
           });
 
           // Increment based on frequency
-          switch (mealData.recurring.frequency) {
+          switch (formData.recurring.frequency) {
             case 'daily':
               currentDate = addDays(currentDate, 1);
               break;
@@ -149,8 +151,13 @@ const MealsPage: React.FC = () => {
         }
       } else {
         addMeal({
-          ...mealData,
-          createddate: new Date().toISOString()
+          mealtype: formData.mealtype,
+          dish: formData.dish,
+          location: formData.location,
+          locationdetails: formData.locationdetails,
+          participants: formData.participants.length > 0 ? formData.participants : [],
+          date: formData.date,
+          recurring: undefined
         });
       }
     }
@@ -183,10 +190,7 @@ const MealsPage: React.FC = () => {
       location: meal.location,
       locationdetails: meal.locationdetails || '',
       participants: meal.participants,
-      recurring: meal.recurring ? {
-        frequency: meal.recurring.frequency,
-        enddate: meal.recurring.enddate || ''
-      } : {
+      recurring: {
         frequency: 'weekly',
         enddate: ''
       }

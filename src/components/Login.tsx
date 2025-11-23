@@ -1,27 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { supabaseHealthCheck, getSupabaseTables } from '../services/supabaseApi';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
 import '../styles/Login.css';
 
-
 const Login: React.FC = () => {
-  const [supabaseOnline, setSupabaseOnline] = useState<boolean | null>(null);
-  const [supabaseTables, setSupabaseTables] = useState<string[]>([]);
-    useEffect(() => {
-      const check = async () => {
-        const ok = await supabaseHealthCheck();
-        setSupabaseOnline(ok);
-        if (ok) {
-          console.log('✅ Verbinding met Supabase is OK');
-          const tables = await getSupabaseTables();
-          setSupabaseTables(tables);
-        } else {
-          console.error('❌ Geen verbinding met Supabase!');
-        }
-      };
-      check();
-    }, []);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -54,22 +36,6 @@ const Login: React.FC = () => {
           <p>Log in om toegang te krijgen tot je gezinsplanner</p>
         </div>
 
-        {supabaseOnline === false && (
-          <div className="error-message">Geen verbinding met Supabase!</div>
-        )}
-        {supabaseOnline === true && (
-          <>
-            <div className="success-message">Verbonden met Supabase</div>
-            <div style={{ margin: '10px 0', fontSize: 14 }}>
-              <strong>Tabellen in Supabase:</strong>
-              <ul>
-                {supabaseTables.map((t) => (
-                  <li key={t}>{t}</li>
-                ))}
-              </ul>
-            </div>
-          </>
-        )}
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="username">Gebruikersnaam</label>
@@ -112,8 +78,6 @@ const Login: React.FC = () => {
             Inloggen
           </button>
         </form>
-
-        {/* login-footer verwijderd, tekst over standaard inloggegevens weggehaald */}
       </div>
     </div>
   );

@@ -26,7 +26,7 @@ export async function getData(table: string) {
 
 // Data toevoegen aan een tabel
 export async function insertData(table: string, values: any) {
-  const { data, error } = await supabase.from(table).insert([values]);
+  const { data, error } = await supabase.from(table).insert([values]).select();
   if (error) {
     console.error('Supabase insert error:', error);
     throw error;
@@ -47,14 +47,14 @@ export async function supabaseHealthCheck() {
 }
 // Data updaten in een tabel
 export async function updateData(table: string, id: string, values: any) {
-  const { data, error } = await supabase.from(table).update(values).eq('id', id);
+  const { data, error } = await supabase.from(table).update(values).eq('id', id).select();
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data[0] : null;
 }
 
 // Data verwijderen uit een tabel
 export async function deleteData(table: string, id: string) {
-  const { data, error } = await supabase.from(table).delete().eq('id', id);
+  const { data, error } = await supabase.from(table).delete().eq('id', id).select();
   if (error) throw error;
-  return data;
+  return Array.isArray(data) ? data[0] : null;
 }

@@ -52,12 +52,7 @@ export interface Meal {
   location: 'home' | 'restaurant' | 'school' | 'work' | 'other';
   locationdetails?: string;
   participants: string[];
-  recurring?: {
-    frequency: 'daily' | 'weekly' | 'monthly';
-    enddate?: string;
-  };
-  createddate: string;
-  completeddate?: string;
+  recurring?: string; // stored as JSON string in database
 }
 
 // Logeren types

@@ -18,12 +18,28 @@ import '../styles/ShoppingPage.css';
 const ShoppingPage: React.FC = () => {
   const { 
     shoppingItems, 
-    shoppingCategories,
     addShoppingItem, 
     updateShoppingItem, 
-    deleteShoppingItem,
-    addShoppingCategory 
+    deleteShoppingItem
   } = useAppData();
+
+  // Vaste categorieën
+  const shoppingCategories = [
+    { id: '1', name: 'Groente & Fruit', color: '#48bb78' },
+    { id: '2', name: 'Vlees & Vis', color: '#e53e3e' },
+    { id: '3', name: 'Zuivel & Eieren', color: '#4299e1' },
+    { id: '4', name: 'Brood & Bakkerij', color: '#ed8936' },
+    { id: '5', name: 'Diepvries', color: '#38b2ac' },
+    { id: '6', name: 'Dranken', color: '#9f7aea' },
+    { id: '7', name: 'Snacks & Snoep', color: '#f56565' },
+    { id: '8', name: 'Pasta & Rijst', color: '#ecc94b' },
+    { id: '9', name: 'Conserven', color: '#718096' },
+    { id: '10', name: 'Schoonmaak', color: '#4fd1c5' },
+    { id: '11', name: 'Persoonlijke Verzorging', color: '#fc8181' },
+    { id: '12', name: 'Baby & Kind', color: '#f6ad55' },
+    { id: '13', name: 'Huisdieren', color: '#90cdf4' },
+    { id: '14', name: 'Overig', color: '#a0aec0' }
+  ];
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
