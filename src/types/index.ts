@@ -17,11 +17,10 @@ export interface FamilyMember {
 export interface CalendarEvent {
   id: string;
   title: string;
-  date: string;
-  time?: string;
+  start_date: string;
+  end_date: string;
   description?: string;
-  participants: string[]; // FamilyMember IDs
-  type: 'appointment' | 'activity' | 'meal' | 'sleepover' | 'task';
+  participants: string[]; // FamilyMember IDs (stored as jsonb)
   location?: string;
 }
 

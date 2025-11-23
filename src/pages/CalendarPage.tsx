@@ -38,29 +38,13 @@ const CalendarPage: React.FC = () => {
   
   const [formData, setFormData] = useState({
     title: '',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    time: '',
+    start_date: format(new Date(), 'yyyy-MM-dd'),
+    end_date: format(new Date(), 'yyyy-MM-dd'),
     description: '',
     participants: [] as string[],
-    type: 'activity' as CalendarEvent['type'],
     location: ''
   });
 
-  const eventTypeLabels = {
-    appointment: 'Afspraak',
-    activity: 'Activiteit',
-    meal: 'Maaltijd',
-    sleepover: 'Logeren',
-    task: 'Taak'
-  };
-
-  const eventTypeColors = {
-    appointment: '#3182ce',
-    activity: '#38a169',
-    meal: '#d69e2e',
-    sleepover: '#805ad5',
-    task: '#e53e3e'
-  };
 
   // Filter events based on selected family members
   const filteredEvents = useMemo(() => {
@@ -76,18 +60,13 @@ const CalendarPage: React.FC = () => {
   // Get events for selected date
   const selectedDateEvents = useMemo(() => {
     return filteredEvents.filter(event => 
-      isSameDay(parseISO(event.date), selectedDate)
-    ).sort((a, b) => {
-      if (!a.time && !b.time) return 0;
-      if (!a.time) return 1;
-      if (!b.time) return -1;
-      return a.time.localeCompare(b.time);
-    });
+      isSameDay(parseISO(event.start_date), selectedDate)
+    ).sort((a, b) => a.title.localeCompare(b.title));
   }, [filteredEvents, selectedDate]);
 
   // Get dates that have events for calendar highlighting
   const eventDates = useMemo(() => {
-    return filteredEvents.map(event => parseISO(event.date));
+    return filteredEvents.map(event => parseISO(event.start_date));
   }, [filteredEvents]);
 
   const handleDateChange = (value: Value) => {
@@ -119,11 +98,10 @@ const CalendarPage: React.FC = () => {
   const resetForm = () => {
     setFormData({
       title: '',
-      date: format(selectedDate, 'yyyy-MM-dd'),
-      time: '',
+      start_date: format(selectedDate, 'yyyy-MM-dd'),
+      end_date: format(selectedDate, 'yyyy-MM-dd'),
       description: '',
       participants: [],
-      type: 'activity',
       location: ''
     });
   };
@@ -132,11 +110,10 @@ const CalendarPage: React.FC = () => {
     setEditingEvent(event);
     setFormData({
       title: event.title,
-      date: event.date,
-      time: event.time || '',
+      start_date: event.start_date,
+      end_date: event.end_date,
       description: event.description || '',
       participants: event.participants,
-      type: event.type,
       location: event.location || ''
     });
     setIsAddModalOpen(true);
@@ -169,17 +146,17 @@ const CalendarPage: React.FC = () => {
   const tileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view === 'month') {
       const dayEvents = filteredEvents.filter(event => 
-        isSameDay(parseISO(event.date), date)
+        isSameDay(parseISO(event.start_date), date)
       );
       
       if (dayEvents.length > 0) {
         return (
           <div className="calendar-tile-content">
             {dayEvents.slice(0, 3).map((event, index) => (
-              <div 
+              <div
                 key={event.id}
                 className="calendar-event-dot"
-                style={{ backgroundColor: eventTypeColors[event.type] }}
+                style={{ backgroundColor: '#3182ce' }}
               />
             ))}
             {dayEvents.length > 3 && (
@@ -212,7 +189,11 @@ const CalendarPage: React.FC = () => {
           <button 
             className="add-button"
             onClick={() => {
-              setFormData(prev => ({ ...prev, date: format(selectedDate, 'yyyy-MM-dd') }));
+              setFormData(prev => ({ 
+                ...prev, 
+                start_date: format(selectedDate, 'yyyy-MM-dd'),
+                end_date: format(selectedDate, 'yyyy-MM-dd')
+              }));
               setIsAddModalOpen(true);
             }}
           >
@@ -284,7 +265,11 @@ const CalendarPage: React.FC = () => {
                 <button 
                   className="add-button small"
                   onClick={() => {
-                    setFormData(prev => ({ ...prev, date: format(selectedDate, 'yyyy-MM-dd') }));
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      start_date: format(selectedDate, 'yyyy-MM-dd'),
+                      end_date: format(selectedDate, 'yyyy-MM-dd')
+                    }));
                     setIsAddModalOpen(true);
                   }}
                 >
@@ -302,14 +287,11 @@ const CalendarPage: React.FC = () => {
                   <div 
                     key={event.id} 
                     className="event-card"
-                    style={{ borderLeftColor: eventTypeColors[event.type] }}
+                    style={{ borderLeftColor: '#3182ce' }}
                   >
                     <div className="event-header">
                       <div className="event-title-section">
                         <h3>{event.title}</h3>
-                        <span className="event-type">
-                          {eventTypeLabels[event.type]}
-                        </span>
                       </div>
                       
                       <div className="event-actions">
@@ -329,12 +311,13 @@ const CalendarPage: React.FC = () => {
                     </div>
 
                     <div className="event-details">
-                      {event.time && (
-                        <div className="event-detail">
-                          <Clock size={16} />
-                          <span>{event.time}</span>
-                        </div>
-                      )}
+                      <div className="event-detail">
+                        <Clock size={16} />
+                        <span>{format(parseISO(event.start_date), 'dd MMM yyyy', { locale: nl })}</span>
+                        {event.start_date !== event.end_date && (
+                          <span> - {format(parseISO(event.end_date), 'dd MMM yyyy', { locale: nl })}</span>
+                        )}
+                      </div>
                       
                       {event.location && (
                         <div className="event-detail">
@@ -385,53 +368,38 @@ const CalendarPage: React.FC = () => {
             </div>
             
             <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="title">Titel *</label>
-                  <input
-                    type="text"
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Voer de titel in"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="type">Type *</label>
-                  <select
-                    id="type"
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as CalendarEvent['type'] })}
-                    required
-                  >
-                    {Object.entries(eventTypeLabels).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="form-group">
+                <label htmlFor="title">Titel *</label>
+                <input
+                  type="text"
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Voer de titel in"
+                  required
+                />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="date">Datum *</label>
+                  <label htmlFor="start_date">Startdatum *</label>
                   <input
                     type="date"
-                    id="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    id="start_date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                     required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="time">Tijd</label>
+                  <label htmlFor="end_date">Einddatum *</label>
                   <input
-                    type="time"
-                    id="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                    type="date"
+                    id="end_date"
+                    value={formData.end_date}
+                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    required
                   />
                 </div>
               </div>
