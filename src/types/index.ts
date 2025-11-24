@@ -59,8 +59,8 @@ export interface Sleepover {
   id: string;
   childid: string; // FamilyMember ID
   date: string;
-  location: string;
-  hostname: string;
+  location?: string; // Contains locationtype as text: "Opa/Oma Asten", "Opa/Oma Heusden", "Oppas", or custom text
+  hostname?: string;
   notes?: string;
   pickuptime?: string;
 }

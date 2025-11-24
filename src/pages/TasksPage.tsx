@@ -12,7 +12,8 @@ import {
   Edit2,
   Trash2,
   X,
-  Search
+  Search,
+  Filter
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -34,6 +35,7 @@ const TasksPage: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -85,7 +87,7 @@ const TasksPage: React.FC = () => {
   };
 
   const [isCompact, setIsCompact] = useLocalStorage<boolean>('tasks.compactView', false);
-  const [isTableCompact, setIsTableCompact] = useLocalStorage<boolean>('tasks.compactTable', false);
+  const [isTableCompact, setIsTableCompact] = useLocalStorage<boolean>('tasks.compactTable', true);
   const [sortKey, setSortKey] = useState<'title'|'date'|'assignedto'|'priority'|'status'>('date');
   const [sortDir, setSortDir] = useState<'asc'|'desc'>('asc');
 
@@ -126,7 +128,8 @@ const TasksPage: React.FC = () => {
     'School',
     'Werk',
     'Gezondheid',
-    'Onderhoud'
+    'Onderhoud',
+    'AppAanpassingen'
   ];
 
   // Filter tasks
@@ -347,24 +350,6 @@ const TasksPage: React.FC = () => {
         </div>
         
         <div className="header-actions">
-          <button
-            className={`compact-toggle ${isCompact ? 'active' : ''}`}
-            onClick={() => { setIsCompact(prev => !prev); if (isTableCompact) setIsTableCompact(false); }}
-            aria-pressed={isCompact}
-            title={isCompact ? 'Compactweergave uit' : 'Compactweergave aan'}
-          >
-            {isCompact ? 'Compact: aan' : 'Compact: uit'}
-          </button>
-
-          <button
-            className={`compact-toggle table-toggle ${isTableCompact ? 'active' : ''}`}
-            onClick={() => { setIsTableCompact(prev => !prev); if (!isTableCompact) setIsCompact(false); }}
-            aria-pressed={isTableCompact}
-            title={isTableCompact ? 'Tabelweergave uit' : 'Tabelweergave aan'}
-          >
-            {isTableCompact ? 'Tabel: aan' : 'Tabel: uit'}
-          </button>
-
           <button 
             className="add-button"
             onClick={() => setIsAddModalOpen(true)}
@@ -376,7 +361,7 @@ const TasksPage: React.FC = () => {
       </div>
 
       {/* Statistics */}
-      <div className="stats-grid">
+      <div className="stats-grid" style={{ display: 'none' }}>
         <div className="stat-card">
           <div className="stat-icon total">
             <CheckSquare size={24} />
@@ -432,51 +417,149 @@ const TasksPage: React.FC = () => {
           />
         </div>
 
-        <div className="filter-controls">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="filter-select"
+        <div className="filters-header">
+          <button 
+            className="filter-toggle-button"
+            onClick={() => setShowFilters(!showFilters)}
           >
-            <option value="all">Alle statussen</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">Alle prioriteiten</option>
-            {Object.entries(priorityLabels).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </select>
-
-          <select
-            value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">Alle personen</option>
-            <option value="">Niet toegewezen</option>
-            {familyMembers.map(member => (
-              <option key={member.id} value={member.id}>{member.name}</option>
-            ))}
-          </select>
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">Alle categorieën</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+            <Filter size={20} />
+            Filters
+            {showFilters ? ' ▲' : ' ▼'}
+          </button>
+          {(statusFilter !== 'all' || priorityFilter !== 'all' || assigneeFilter !== 'all' || categoryFilter !== 'all') && (
+            <button 
+              className="clear-filters-button"
+              onClick={() => {
+                setStatusFilter('all');
+                setPriorityFilter('all');
+                setAssigneeFilter('all');
+                setCategoryFilter('all');
+              }}
+            >
+              Wis filters
+            </button>
+          )}
         </div>
+
+        {showFilters && (
+          <div className="filter-panel">
+            <div className="filter-group">
+              <label>Status</label>
+              <div className="filter-selector">
+                <button
+                  type="button"
+                  className={`filter-option ${statusFilter === 'all' ? 'selected' : ''}`}
+                  onClick={() => setStatusFilter('all')}
+                >
+                  Alle statussen
+                </button>
+                {Object.entries(statusLabels).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`filter-option ${statusFilter === value ? 'selected' : ''}`}
+                    onClick={() => setStatusFilter(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label>Prioriteit</label>
+              <div className="filter-selector">
+                <button
+                  type="button"
+                  className={`filter-option ${priorityFilter === 'all' ? 'selected' : ''}`}
+                  onClick={() => setPriorityFilter('all')}
+                >
+                  Alle prioriteiten
+                </button>
+                {Object.entries(priorityLabels).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`filter-option priority-option ${priorityFilter === value ? 'selected' : ''}`}
+                    onClick={() => setPriorityFilter(value)}
+                    style={{
+                      borderColor: priorityFilter === value ? priorityColors[value as Task['priority']] : '#e2e8f0',
+                      backgroundColor: priorityFilter === value ? `${priorityColors[value as Task['priority']]}20` : 'white',
+                      color: priorityFilter === value ? priorityColors[value as Task['priority']] : '#4a5568'
+                    }}
+                  >
+                    <div 
+                      className="priority-color"
+                      style={{ backgroundColor: priorityColors[value as Task['priority']] }}
+                    />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label>Toegewezen aan</label>
+              <div className="filter-selector">
+                <button
+                  type="button"
+                  className={`filter-option ${assigneeFilter === 'all' ? 'selected' : ''}`}
+                  onClick={() => setAssigneeFilter('all')}
+                >
+                  Alle personen
+                </button>
+                <button
+                  type="button"
+                  className={`filter-option ${assigneeFilter === '' ? 'selected' : ''}`}
+                  onClick={() => setAssigneeFilter('')}
+                >
+                  Niet toegewezen
+                </button>
+                {familyMembers.map(member => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    className={`filter-option participant-option ${assigneeFilter === member.id ? 'selected' : ''}`}
+                    onClick={() => setAssigneeFilter(member.id)}
+                    style={{
+                      borderColor: assigneeFilter === member.id ? member.color : '#e2e8f0',
+                      backgroundColor: assigneeFilter === member.id ? `${member.color}20` : 'white'
+                    }}
+                  >
+                    <div 
+                      className="participant-color"
+                      style={{ backgroundColor: member.color }}
+                    />
+                    {member.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-group">
+              <label>Categorie</label>
+              <div className="filter-selector">
+                <button
+                  type="button"
+                  className={`filter-option ${categoryFilter === 'all' ? 'selected' : ''}`}
+                  onClick={() => setCategoryFilter('all')}
+                >
+                  Alle categorieën
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`filter-option category-option ${categoryFilter === cat ? 'selected' : ''}`}
+                    onClick={() => setCategoryFilter(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tasks List */}
@@ -691,71 +774,100 @@ const TasksPage: React.FC = () => {
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="category">Categorie(s) *</label>
-                  <select
-                    id="category"
-                    multiple
-                    value={formData.categories}
-                    onChange={(e) => {
-                      const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                      setFormData({ ...formData, categories: opts });
-                    }}
-                    required
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="priority">Prioriteit *</label>
-                  <select
-                    id="priority"
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value as Task['priority'] })}
-                    required
-                  >
-                    {Object.entries(priorityLabels).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
+              <div className="form-group">
+                <label>Categorie(s) *</label>
+                <div className="categories-selector">
+                  {categories.map(category => (
+                    <button
+                      key={category}
+                      type="button"
+                      className={`category-option ${formData.categories.includes(category) ? 'selected' : ''}`}
+                      onClick={() => {
+                        const isSelected = formData.categories.includes(category);
+                        if (isSelected && formData.categories.length === 1) {
+                          // Prevent deselecting the last category
+                          return;
+                        }
+                        setFormData({
+                          ...formData,
+                          categories: isSelected
+                            ? formData.categories.filter(c => c !== category)
+                            : [...formData.categories, category]
+                        });
+                      }}
+                    >
+                      {category}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="assignedto">Toegewezen aan</label>
-                  <select
-                    id="assignedto"
-                    multiple
-                    value={formData.assignedto}
-                    onChange={(e) => {
-                      const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                      setFormData({ ...formData, assignedto: opts });
-                    }}
-                  >
-                    {familyMembers.map(member => (
-                      <option key={member.id} value={member.id}>{member.name}</option>
-                    ))}
-                  </select>
+              <div className="form-group">
+                <label>Prioriteit *</label>
+                <div className="priority-selector">
+                  {Object.entries(priorityLabels).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={`priority-option ${formData.priority === value ? 'selected' : ''}`}
+                      onClick={() => setFormData({ ...formData, priority: value as Task['priority'] })}
+                      style={{
+                        borderColor: formData.priority === value ? priorityColors[value as Task['priority']] : '#e2e8f0',
+                        backgroundColor: formData.priority === value ? `${priorityColors[value as Task['priority']]}20` : 'white',
+                        color: formData.priority === value ? priorityColors[value as Task['priority']] : '#4a5568'
+                      }}
+                    >
+                      <div 
+                        className="priority-color"
+                        style={{ backgroundColor: priorityColors[value as Task['priority']] }}
+                      />
+                      {label}
+                    </button>
+                  ))}
                 </div>
+              </div>
 
+              <div className="form-group">
+                <label>Toegewezen aan</label>
+                <div className="participants-selector">
+                  {familyMembers.map(member => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      className={`participant-option ${formData.assignedto.includes(member.id) ? 'selected' : ''}`}
+                      onClick={() => {
+                        const isSelected = formData.assignedto.includes(member.id);
+                        setFormData({
+                          ...formData,
+                          assignedto: isSelected
+                            ? formData.assignedto.filter(id => id !== member.id)
+                            : [...formData.assignedto, member.id]
+                        });
+                      }}
+                      style={{
+                        borderColor: formData.assignedto.includes(member.id) ? member.color : '#e2e8f0',
+                        backgroundColor: formData.assignedto.includes(member.id) ? `${member.color}20` : 'white'
+                      }}
+                    >
+                      <div 
+                        className="participant-color"
+                        style={{ backgroundColor: member.color }}
+                      />
+                      {member.name}
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="date">Datum (optioneel)</label>
-                    <input
-                      type="date"
-                      id="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    />
-                  </div>
-                </div>
+              <div className="form-group">
+                <label htmlFor="date">Datum (optioneel)</label>
+                <input
+                  type="date"
+                  id="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                />
+              </div>
 
               <div className="modal-actions">
                 <button type="button" className="cancel-button" onClick={closeModal}>
