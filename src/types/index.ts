@@ -28,7 +28,8 @@ export interface CalendarEvent {
 export interface ShoppingItem {
   id: string;
   name: string;
-  category: string;
+  category: string; // de oude naamkoppeling, alleen voor migratie!
+  category_id: string; // nieuwe id-based koppeling, ALTIJD gebruiken
   quantity?: number;
   unit?: string;
   instock?: boolean;
@@ -43,6 +44,7 @@ export interface ShoppingCategory {
   id: string;
   name: string;
   color: string;
+  description?: string;
 }
 
 export interface Shop {

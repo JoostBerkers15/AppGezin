@@ -172,7 +172,8 @@ const ShoppingPage: React.FC = () => {
 
     const itemData = {
       name: formData.name.trim(),
-      category: formData.category,
+      category: formData.category, // optioneel/voor migratie
+      category_id: formData.category, // verplicht veld voor ShoppingItem
       notes: formData.notes.trim() || undefined,
       shopid: formData.shopid || undefined,
       iscompleted: false,
@@ -201,9 +202,13 @@ const ShoppingPage: React.FC = () => {
 
   const handleEdit = (item: ShoppingItem) => {
     setEditingItem(item);
+    // Bepaal altijd de juiste categoryId:
+    const categoryId =
+      item.category_id ||
+      (shoppingCategories.find((c) => c.name === item.category)?.id ?? '');
     setFormData({
       name: item.name,
-      category: item.category,
+      category: categoryId,
       notes: item.notes || '',
       shopid: item.shopid || ''
     });
@@ -489,7 +494,6 @@ const ShoppingPage: React.FC = () => {
               value={selectedCategory}
               onChange={(e) => {
                 setSelectedCategory(e.target.value);
-                setSelectedShopCategory('all'); // Reset shop category when category changes
               }}
               className="category-filter"
             >
@@ -586,6 +590,9 @@ const ShoppingPage: React.FC = () => {
                 {!isShopCollapsed && (
                   <div className="shop-categories">
                     {Object.entries(categoryGroups).map(([categoryName, items]) => {
+                      // categoryName is meestal een id (category_id)
+                      const categoryObj = shoppingCategories.find(c => c.id === categoryName);
+                      const headerLabel = categoryObj?.description || categoryObj?.name || categoryName;
                       const categoryKey = `${shopId}-${categoryName}`;
                       const isCategoryCollapsed = collapsedCategories.has(categoryKey);
                       
@@ -602,7 +609,7 @@ const ShoppingPage: React.FC = () => {
                               ) : (
                                 <ChevronDown size={16} className="collapse-icon" />
                               )}
-                              <h3>{categoryName}</h3>
+                              <h3>{headerLabel}</h3>
                             </div>
                             <span className="item-count">{items.length} items</span>
                           </div>
@@ -711,7 +718,7 @@ const ShoppingPage: React.FC = () => {
                 >
                   <option value="">Selecteer een categorie</option>
                   {shoppingCategories.map(category => (
-                    <option key={category.id} value={category.name}>
+                    <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}

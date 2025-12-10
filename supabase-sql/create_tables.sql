@@ -27,7 +27,8 @@ create table if not exists meals (
 create table if not exists shopping_categories (
   id text primary key,
   name text not null,
-  color text
+  color text,
+  description text
 );
 
 -- 3a. shops
@@ -74,6 +75,22 @@ begin
     alter table shopping_items add column shopid text;
   end if;
 end $$;
+
+-- Voeg category_id kolom toe aan shopping_items als deze nog niet bestaat
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns 
+    where table_name = 'shopping_items' 
+    and column_name = 'category_id'
+  ) then
+    alter table shopping_items add column category_id text;
+  end if;
+end $$;
+
+-- MIGRATIE: vul category_id op basis van huidige category (naam)
+update shopping_items i set category_id = c.id
+from shopping_categories c where i.category = c.name and (i.category_id is null or i.category_id='');
 
 
 -- 5. sleepovers
