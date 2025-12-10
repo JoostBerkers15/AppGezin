@@ -4,6 +4,7 @@ import {
   CalendarEvent, 
   ShoppingItem, 
   ShoppingCategory,
+  Shop,
   Meal, 
   Sleepover, 
   Task 
@@ -13,6 +14,7 @@ import {
   calendarEventsApi,
   shoppingItemsApi,
   shoppingCategoriesApi,
+  shopsApi,
   mealsApi,
   sleepoversApi,
   tasksApi
@@ -23,6 +25,7 @@ export const useAppData = () => {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [shoppingCategories, setShoppingCategories] = useState<ShoppingCategory[]>([]);
+  const [shops, setShops] = useState<Shop[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [sleepovers, setSleepovers] = useState<Sleepover[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -41,6 +44,7 @@ export const useAppData = () => {
         calendarRes,
         shoppingItemsRes,
         shoppingCategoriesRes,
+        shopsRes,
         mealsRes,
         sleepoversRes,
         tasksRes
@@ -49,6 +53,7 @@ export const useAppData = () => {
         calendarEventsApi.getAll(),
         shoppingItemsApi.getAll(),
         shoppingCategoriesApi.getAll(),
+        shopsApi.getAll(),
         mealsApi.getAll(),
         sleepoversApi.getAll(),
         tasksApi.getAll()
@@ -58,6 +63,7 @@ export const useAppData = () => {
       setCalendarEvents(calendarRes);
       setShoppingItems(shoppingItemsRes);
       setShoppingCategories(shoppingCategoriesRes);
+      setShops(shopsRes);
       setMeals(mealsRes);
       setSleepovers(sleepoversRes);
       setTasks(tasksRes);
@@ -262,6 +268,53 @@ export const useAppData = () => {
   };
 
   // ============================================================================
+  // SHOPS
+  // ============================================================================
+
+  const addShop = async (shop: Omit<Shop, 'id'>) => {
+    try {
+      const newShop: Shop = {
+        ...shop,
+        id: Date.now().toString()
+      };
+      const response = await shopsApi.create(newShop);
+      if (response) setShops(prev => [...prev, response]);
+      return response;
+    } catch (error) {
+      console.error('Error adding shop:', error);
+      throw error;
+    }
+  };
+
+  const updateShop = async (id: string, updates: Partial<Shop>) => {
+    try {
+      const existing = shops.find(s => s.id === id);
+      if (!existing) return;
+      
+      const updated = { ...existing, ...updates };
+      const response = await shopsApi.update(id, updated);
+      if (response) {
+        setShops(prev => prev.map(shop => 
+          shop.id === id ? response : shop
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating shop:', error);
+      throw error;
+    }
+  };
+
+  const deleteShop = async (id: string) => {
+    try {
+      await shopsApi.delete(id);
+      setShops(prev => prev.filter(shop => shop.id !== id));
+    } catch (error) {
+      console.error('Error deleting shop:', error);
+      throw error;
+    }
+  };
+
+  // ============================================================================
   // MEALS
   // ============================================================================
 
@@ -415,6 +468,7 @@ export const useAppData = () => {
     calendarEvents,
     shoppingItems,
     shoppingCategories,
+    shops,
     meals,
     sleepovers,
     tasks,
@@ -439,6 +493,11 @@ export const useAppData = () => {
     addShoppingCategory,
     updateShoppingCategory,
     deleteShoppingCategory,
+    
+    // Shops
+    addShop,
+    updateShop,
+    deleteShop,
     
     // Meals
     addMeal,

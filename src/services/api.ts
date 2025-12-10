@@ -4,6 +4,7 @@ import {
   CalendarEvent, 
   ShoppingItem, 
   ShoppingCategory, 
+  Shop,
   Meal, 
   Sleepover, 
   Task 
@@ -42,6 +43,17 @@ export const shoppingCategoriesApi = {
   create: (data: ShoppingCategory) => insertData('shopping_categories', data),
   update: (id: string, values: any) => updateData('shopping_categories', id, values),
   delete: (id: string) => deleteData('shopping_categories', id),
+};
+
+// ============================================================================
+// SHOPS API
+// ============================================================================
+
+export const shopsApi = {
+  getAll: () => getData('shops'),
+  create: (data: Shop) => insertData('shops', data),
+  update: (id: string, values: any) => updateData('shops', id, values),
+  delete: (id: string) => deleteData('shops', id),
 };
 
 // ============================================================================

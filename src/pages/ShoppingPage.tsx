@@ -1,17 +1,22 @@
 import React, { useState, useMemo } from 'react';
 import { useAppData } from '../hooks/useAppData';
-import { ShoppingItem, ShoppingCategory } from '../types';
+import { ShoppingItem, ShoppingCategory, Shop } from '../types';
 import { 
   ShoppingCart, 
   Plus, 
   Check, 
   X, 
   Package,
+  PackageX,
   Search,
   Edit2,
   Trash2,
   Settings,
-  Save
+  Save,
+  Store,
+  RotateCcw,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import '../styles/ShoppingPage.css';
 
@@ -19,19 +24,27 @@ const ShoppingPage: React.FC = () => {
   const { 
     shoppingItems, 
     shoppingCategories,
+    shops,
     addShoppingItem, 
     updateShoppingItem, 
     deleteShoppingItem,
     addShoppingCategory,
     updateShoppingCategory,
-    deleteShoppingCategory
+    deleteShoppingCategory,
+    addShop,
+    updateShop,
+    deleteShop
   } = useAppData();
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [showCompleted, setShowCompleted] = useState(false);
+  const [showOutOfStock, setShowOutOfStock] = useState(false);
+  const [isShopMode, setIsShopMode] = useState(false);
+  const [showCompletedInShop, setShowCompletedInShop] = useState(false);
+  const [collapsedShops, setCollapsedShops] = useState<Set<string>>(new Set());
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   
   // Category management state
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -41,15 +54,40 @@ const ShoppingPage: React.FC = () => {
     color: '#718096'
   });
   
+  // Shop management state
+  const [isShopModalOpen, setIsShopModalOpen] = useState(false);
+  const [editingShop, setEditingShop] = useState<Shop | null>(null);
+  const [shopFormData, setShopFormData] = useState({
+    name: '',
+    address: '',
+    notes: ''
+  });
+  
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    notes: ''
+    notes: '',
+    shopid: ''
   });
 
   // Filter and search items
   const filteredItems = useMemo(() => {
     let filtered = shoppingItems;
+
+    // Shop mode filter: only show items that are not in stock (instock = false)
+    if (isShopMode) {
+      filtered = filtered.filter(item => item.instock === false);
+      
+      // In shop mode, optionally show completed items
+      if (!showCompletedInShop) {
+        filtered = filtered.filter(item => !item.iscompleted);
+      }
+    } else {
+      // Normal mode (voorraad beheer): filter by out of stock if enabled
+      if (showOutOfStock) {
+        filtered = filtered.filter(item => item.instock === false);
+      }
+    }
 
     // Search filter
     if (searchTerm) {
@@ -64,41 +102,68 @@ const ShoppingPage: React.FC = () => {
       filtered = filtered.filter(item => item.category === selectedCategory);
     }
 
-    // Completed filter
-    if (!showCompleted) {
-      filtered = filtered.filter(item => !item.iscompleted);
-    }
-
     return filtered.sort((a, b) => {
-      // Sort by completion status first, then by name
-      if (a.iscompleted !== b.iscompleted) {
+      // In shop mode, sort by completion status first, then by name
+      if (isShopMode && a.iscompleted !== b.iscompleted) {
         return a.iscompleted ? 1 : -1;
       }
       return a.name.localeCompare(b.name);
     });
-  }, [shoppingItems, searchTerm, selectedCategory, showCompleted]);
+  }, [shoppingItems, searchTerm, selectedCategory, showCompletedInShop, showOutOfStock, isShopMode]);
 
-  // Group items by category
+  // Group items by shop, then by category
   const groupedItems = useMemo(() => {
-    const groups: Record<string, ShoppingItem[]> = {};
+    const shopGroups: Record<string, Record<string, ShoppingItem[]>> = {};
     
     filteredItems.forEach(item => {
-      if (!groups[item.category]) {
-        groups[item.category] = [];
+      const shopId = item.shopid || 'no-shop';
+      if (!shopGroups[shopId]) {
+        shopGroups[shopId] = {};
       }
-      groups[item.category].push(item);
+      if (!shopGroups[shopId][item.category]) {
+        shopGroups[shopId][item.category] = [];
+      }
+      shopGroups[shopId][item.category].push(item);
     });
 
-    return groups;
+    return shopGroups;
   }, [filteredItems]);
+
+  const toggleShopCollapse = (shopId: string) => {
+    setCollapsedShops(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(shopId)) {
+        newSet.delete(shopId);
+      } else {
+        newSet.add(shopId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleCategoryCollapse = (shopId: string, category: string) => {
+    const key = `${shopId}-${category}`;
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
 
   // Statistics
   const stats = useMemo(() => {
     const total = shoppingItems.length;
     const completed = shoppingItems.filter(item => item.iscompleted).length;
     const pending = total - completed;
+    const outOfStock = shoppingItems.filter(item => item.instock === false).length;
+    const inShopModePending = shoppingItems.filter(item => item.instock === false && !item.iscompleted).length;
+    const inShopModeCompleted = shoppingItems.filter(item => item.instock === false && item.iscompleted).length;
 
-    return { total, completed, pending };
+    return { total, completed, pending, outOfStock, inShopModePending, inShopModeCompleted };
   }, [shoppingItems]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -109,7 +174,9 @@ const ShoppingPage: React.FC = () => {
       name: formData.name.trim(),
       category: formData.category,
       notes: formData.notes.trim() || undefined,
-      iscompleted: false
+      shopid: formData.shopid || undefined,
+      iscompleted: false,
+      instock: true  // New items are in stock by default
     };
 
     if (editingItem) {
@@ -127,7 +194,8 @@ const ShoppingPage: React.FC = () => {
     setFormData({
       name: '',
       category: '',
-      notes: ''
+      notes: '',
+      shopid: ''
     });
   };
 
@@ -136,7 +204,8 @@ const ShoppingPage: React.FC = () => {
     setFormData({
       name: item.name,
       category: item.category,
-      notes: item.notes || ''
+      notes: item.notes || '',
+      shopid: item.shopid || ''
     });
     setIsAddModalOpen(true);
   };
@@ -149,6 +218,25 @@ const ShoppingPage: React.FC = () => {
 
   const toggleCompleted = (id: string, iscompleted: boolean) => {
     updateShoppingItem(id, { iscompleted: !iscompleted });
+  };
+
+  const toggleInStock = (id: string, instock: boolean | undefined) => {
+    updateShoppingItem(id, { instock: !instock });
+  };
+
+  const finishShopping = () => {
+    // In shop mode: set all completed items back to in stock and uncheck them
+    const completedItems = shoppingItems.filter(item => item.iscompleted && item.instock === false);
+    if (completedItems.length === 0) return;
+    
+    if (window.confirm(`Klaar met winkelen? ${completedItems.length} afgevinkte items worden weer op voorraad gezet.`)) {
+      completedItems.forEach(item => {
+        updateShoppingItem(item.id, { 
+          instock: true,
+          iscompleted: false
+        });
+      });
+    }
   };
 
   const closeModal = () => {
@@ -218,6 +306,60 @@ const ShoppingPage: React.FC = () => {
     setCategoryFormData({ name: '', color: '#718096' });
   };
 
+  // Shop management functions
+  const handleShopSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!shopFormData.name.trim()) return;
+
+    if (editingShop) {
+      updateShop(editingShop.id, shopFormData);
+      setEditingShop(null);
+    } else {
+      addShop(shopFormData);
+    }
+
+    setShopFormData({ name: '', address: '', notes: '' });
+    setIsShopModalOpen(false);
+  };
+
+  const handleShopEdit = (shop: Shop) => {
+    setEditingShop(shop);
+    setShopFormData({
+      name: shop.name,
+      address: shop.address || '',
+      notes: shop.notes || ''
+    });
+    setIsShopModalOpen(true);
+  };
+
+  const handleShopDelete = (id: string) => {
+    const shop = shops.find(s => s.id === id);
+    if (!shop) return;
+    
+    // Check if any items use this shop
+    const itemsUsingShop = shoppingItems.filter(item => item.shopid === shop.id);
+    if (itemsUsingShop.length > 0) {
+      alert(`Deze winkel wordt nog gebruikt door ${itemsUsingShop.length} item(s). Verwijder eerst deze items of wijzig hun winkel.`);
+      return;
+    }
+
+    if (window.confirm(`Weet je zeker dat je de winkel "${shop.name}" wilt verwijderen?`)) {
+      deleteShop(id);
+    }
+  };
+
+  const closeShopModal = () => {
+    setIsShopModalOpen(false);
+    setEditingShop(null);
+    setShopFormData({ name: '', address: '', notes: '' });
+  };
+
+  const getShopName = (shopId?: string) => {
+    if (!shopId) return null;
+    const shop = shops.find(s => s.id === shopId);
+    return shop?.name || null;
+  };
+
   // Predefined colors for categories
   const categoryColors = [
     '#48bb78', '#e53e3e', '#4299e1', '#ed8936', '#38b2ac',
@@ -226,7 +368,7 @@ const ShoppingPage: React.FC = () => {
   ];
 
   return (
-    <div className="shopping-page">
+    <div className={`shopping-page ${isShopMode ? 'shop-mode' : ''}`}>
       <div className="page-header">
         <div className="page-title">
           <ShoppingCart size={32} />
@@ -234,59 +376,103 @@ const ShoppingPage: React.FC = () => {
         </div>
         
         <div className="header-actions">
+          {!isShopMode && (
+            <>
+              <button 
+                className="add-button secondary"
+                onClick={() => setIsCategoryModalOpen(true)}
+                title="Categorieën beheren"
+              >
+                <Settings size={20} />
+                Categorieën
+              </button>
+              <button 
+                className="add-button secondary"
+                onClick={() => setIsShopModalOpen(true)}
+                title="Winkels beheren"
+              >
+                <Store size={20} />
+                Winkels
+              </button>
+            </>
+          )}
           <button 
-            className="add-button secondary"
-            onClick={() => setIsCategoryModalOpen(true)}
-            title="Categorieën beheren"
+            className={`add-button ${isShopMode ? 'secondary' : ''}`}
+            onClick={() => setIsShopMode(!isShopMode)}
+            title={isShopMode ? 'Voorraad beheer' : 'Winkel mode'}
           >
-            <Settings size={20} />
-            Categorieën
+            {isShopMode ? <Package size={20} /> : <Store size={20} />}
+            {isShopMode ? 'Voorraad Beheer' : 'Winkel Mode'}
           </button>
-          <button 
-            className="add-button"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            <Plus size={20} />
-            Item toevoegen
-          </button>
+          {!isShopMode && (
+            <button 
+              className="add-button"
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              <Plus size={20} />
+              Item toevoegen
+            </button>
+          )}
         </div>
       </div>
 
       {/* Statistics */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon total">
-            <ShoppingCart size={24} />
+      {!isShopMode && (
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon total">
+              <ShoppingCart size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-number">{stats.total}</span>
+              <span className="stat-label">Totaal items</span>
+            </div>
           </div>
-          <div className="stat-info">
-            <span className="stat-number">{stats.total}</span>
-            <span className="stat-label">Totaal items</span>
+          
+          <div className="stat-card">
+            <div className="stat-icon pending">
+              <Package size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-number">{stats.pending}</span>
+              <span className="stat-label">Te kopen</span>
+            </div>
+          </div>
+          
+          <div className="stat-card">
+            <div className="stat-icon completed">
+              <Check size={24} />
+            </div>
+            <div className="stat-info">
+              <span className="stat-number">{stats.completed}</span>
+              <span className="stat-label">Afgevinkt</span>
+            </div>
           </div>
         </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon pending">
-            <Package size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-number">{stats.pending}</span>
-            <span className="stat-label">Te kopen</span>
-          </div>
+      )}
+      
+      {/* Shop Mode Minimal Stats */}
+      {isShopMode && (
+        <div className="shop-mode-stats">
+          <span>{stats.inShopModePending} te kopen</span>
+          {stats.inShopModeCompleted > 0 && (
+            <span className="shop-mode-completed-count">{stats.inShopModeCompleted} afgevinkt</span>
+          )}
+          {stats.inShopModeCompleted > 0 && (
+            <button 
+              className="finish-shopping-button"
+              onClick={finishShopping}
+              title="Klaar met winkelen - zet alle afgevinkte items weer op voorraad"
+            >
+              <Check size={16} />
+              Klaar met winkelen
+            </button>
+          )}
         </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon completed">
-            <Check size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-number">{stats.completed}</span>
-            <span className="stat-label">Afgevinkt</span>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Filters */}
-      <div className="filters-section">
+      <div className={`filters-section ${isShopMode ? 'shop-mode-filters' : ''}`}>
         <div className="search-box">
           <Search size={20} />
           <input
@@ -297,38 +483,64 @@ const ShoppingPage: React.FC = () => {
           />
         </div>
 
-        <div className="filter-controls">
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="category-filter"
-          >
-            <option value="all">Alle categorieën</option>
-            {shoppingCategories.map(category => (
-              <option key={category.id} value={category.name}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+        {!isShopMode && (
+          <div className="filter-controls">
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setSelectedShopCategory('all'); // Reset shop category when category changes
+              }}
+              className="category-filter"
+            >
+              <option value="all">Alle categorieën</option>
+              {shoppingCategories.map(category => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
 
-          <div className="toggle-filters">
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={showCompleted}
-                onChange={(e) => setShowCompleted(e.target.checked)}
-              />
-              <span>Toon afgevinkt</span>
-            </label>
+            <div className="toggle-filters">
+              <label className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={showOutOfStock}
+                  onChange={(e) => setShowOutOfStock(e.target.checked)}
+                />
+                <span>Alleen niet op voorraad</span>
+              </label>
+            </div>
           </div>
-
-          {stats.completed > 0 && (
-            <button className="clear-completed" onClick={clearCompleted}>
-              <Trash2 size={16} />
-              Wis afgevinkt ({stats.completed})
-            </button>
-          )}
-        </div>
+        )}
+        
+        {isShopMode && (
+          <div className="filter-controls shop-mode-controls">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="category-filter"
+            >
+              <option value="all">Alle categorieën</option>
+              {shoppingCategories.map(category => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            
+            <div className="toggle-filters">
+              <label className="toggle-label">
+                <input
+                  type="checkbox"
+                  checked={showCompletedInShop}
+                  onChange={(e) => setShowCompletedInShop(e.target.checked)}
+                />
+                <span>Toon afgevinkt</span>
+              </label>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Shopping List */}
@@ -347,60 +559,121 @@ const ShoppingPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          Object.entries(groupedItems).map(([categoryName, items]) => (
-            <div key={categoryName} className="category-section">
-              <div 
-                className="category-header"
-                style={{ borderLeftColor: getCategoryColor(categoryName) }}
-              >
-                <h3>{categoryName}</h3>
-                <span className="item-count">{items.length} items</span>
-              </div>
-              
-              <div className="items-grid">
-                {items.map(item => (
-                  <div 
-                    key={item.id} 
-                    className={`item-card ${item.iscompleted ? 'completed' : ''}`}
-                  >
-                    <div className="item-main">
-                      <button
-                        className={`check-button ${item.iscompleted ? 'checked' : ''}`}
-                        onClick={() => toggleCompleted(item.id, item.iscompleted)}
-                        aria-label={item.iscompleted ? 'Markeer als niet gekocht' : 'Markeer als gekocht'}
-                      >
-                        {item.iscompleted && <Check size={16} />}
-                      </button>
-                      
-                      <div className="item-info">
-                        <h4>{item.name}</h4>
-                        {item.notes && (
-                          <p className="item-notes">{item.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="item-actions">
-                      <button 
-                        className="action-button edit"
-                        onClick={() => handleEdit(item)}
-                        aria-label={`Bewerk ${item.name}`}
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button 
-                        className="action-button delete"
-                        onClick={() => handleDelete(item.id)}
-                        aria-label={`Verwijder ${item.name}`}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+          Object.entries(groupedItems).map(([shopId, categoryGroups]) => {
+            const shopName = shopId === 'no-shop' ? 'Geen winkel' : getShopName(shopId) || 'Onbekende winkel';
+            const isShopCollapsed = collapsedShops.has(shopId);
+            
+            return (
+              <div key={shopId} className="shop-section">
+                <div 
+                  className="shop-header"
+                  onClick={() => toggleShopCollapse(shopId)}
+                >
+                  <div className="shop-header-left">
+                    {isShopCollapsed ? (
+                      <ChevronRight size={20} className="collapse-icon" />
+                    ) : (
+                      <ChevronDown size={20} className="collapse-icon" />
+                    )}
+                    <Store size={20} />
+                    <h2>{shopName}</h2>
                   </div>
-                ))}
+                  <span className="shop-item-count">
+                    {Object.values(categoryGroups).reduce((sum, items) => sum + items.length, 0)} items
+                  </span>
+                </div>
+                
+                {!isShopCollapsed && (
+                  <div className="shop-categories">
+                    {Object.entries(categoryGroups).map(([categoryName, items]) => {
+                      const categoryKey = `${shopId}-${categoryName}`;
+                      const isCategoryCollapsed = collapsedCategories.has(categoryKey);
+                      
+                      return (
+                        <div key={categoryKey} className="category-section">
+                          <div 
+                            className="category-header"
+                            onClick={() => toggleCategoryCollapse(shopId, categoryName)}
+                            style={{ borderLeftColor: getCategoryColor(categoryName) }}
+                          >
+                            <div className="category-header-left">
+                              {isCategoryCollapsed ? (
+                                <ChevronRight size={16} className="collapse-icon" />
+                              ) : (
+                                <ChevronDown size={16} className="collapse-icon" />
+                              )}
+                              <h3>{categoryName}</h3>
+                            </div>
+                            <span className="item-count">{items.length} items</span>
+                          </div>
+                          
+                          {!isCategoryCollapsed && (
+                            <div className={`items-grid ${isShopMode ? 'shop-mode-grid' : ''}`}>
+                              {items.map(item => (
+                                <div 
+                                  key={item.id} 
+                                  className={`item-card ${item.iscompleted ? 'completed' : ''} ${item.instock ? 'in-stock' : ''} ${isShopMode ? 'shop-mode-card' : ''}`}
+                                >
+                                  <div className="item-main">
+                                    {isShopMode && (
+                                      <button
+                                        className={`check-button ${item.iscompleted ? 'checked' : ''}`}
+                                        onClick={() => toggleCompleted(item.id, item.iscompleted)}
+                                        aria-label={item.iscompleted ? 'Markeer als niet gekocht' : 'Markeer als gekocht'}
+                                      >
+                                        {item.iscompleted && <Check size={16} />}
+                                      </button>
+                                    )}
+                                    
+                                    <div className="item-info">
+                                      <h4>{item.name}</h4>
+                                      {item.notes && (
+                                        <p className="item-notes">{item.notes}</p>
+                                      )}
+                                    </div>
+                                    
+                                    {!isShopMode && (
+                                      <button
+                                        className={`stock-button ${item.instock ? 'in-stock' : 'out-of-stock'}`}
+                                        onClick={() => toggleInStock(item.id, item.instock)}
+                                        title={item.instock ? 'Markeer als niet op voorraad' : 'Markeer als op voorraad'}
+                                        aria-label={item.instock ? 'Markeer als niet op voorraad' : 'Markeer als op voorraad'}
+                                      >
+                                        {item.instock ? <Package size={16} /> : <PackageX size={16} />}
+                                      </button>
+                                    )}
+                                  </div>
+                                  
+                                  {!isShopMode && (
+                                    <div className="item-actions">
+                                      <button 
+                                        className="action-button edit"
+                                        onClick={() => handleEdit(item)}
+                                        aria-label={`Bewerk ${item.name}`}
+                                      >
+                                        <Edit2 size={14} />
+                                      </button>
+                                      <button 
+                                        className="action-button delete"
+                                        onClick={() => handleDelete(item.id)}
+                                        aria-label={`Verwijder ${item.name}`}
+                                      >
+                                        <Trash2 size={14} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -440,6 +713,22 @@ const ShoppingPage: React.FC = () => {
                   {shoppingCategories.map(category => (
                     <option key={category.id} value={category.name}>
                       {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="shopid">Winkel</label>
+                <select
+                  id="shopid"
+                  value={formData.shopid}
+                  onChange={(e) => setFormData({ ...formData, shopid: e.target.value })}
+                >
+                  <option value="">Geen winkel</option>
+                  {shops.map(shop => (
+                    <option key={shop.id} value={shop.id}>
+                      {shop.name}
                     </option>
                   ))}
                 </select>
@@ -554,6 +843,102 @@ const ShoppingPage: React.FC = () => {
                           className="action-button delete"
                           onClick={() => handleCategoryDelete(category.id)}
                           aria-label={`Verwijder ${category.name}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shop Management Modal */}
+      {isShopModalOpen && (
+        <div className="modal-overlay" onClick={closeShopModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingShop ? 'Winkel bewerken' : 'Winkel toevoegen'}</h2>
+              <button className="close-button" onClick={closeShopModal}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleShopSubmit} className="modal-form">
+              <div className="form-group">
+                <label htmlFor="shop-name">Naam *</label>
+                <input
+                  type="text"
+                  id="shop-name"
+                  value={shopFormData.name}
+                  onChange={(e) => setShopFormData({ ...shopFormData, name: e.target.value })}
+                  placeholder="Bijv. Albert Heijn, Jumbo, Lidl..."
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="shop-address">Adres</label>
+                <input
+                  type="text"
+                  id="shop-address"
+                  value={shopFormData.address}
+                  onChange={(e) => setShopFormData({ ...shopFormData, address: e.target.value })}
+                  placeholder="Bijv. Hoofdstraat 123, Amsterdam"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="shop-notes">Opmerkingen</label>
+                <textarea
+                  id="shop-notes"
+                  value={shopFormData.notes}
+                  onChange={(e) => setShopFormData({ ...shopFormData, notes: e.target.value })}
+                  placeholder="Optionele opmerkingen over de winkel..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="cancel-button" onClick={closeShopModal}>
+                  Annuleren
+                </button>
+                <button type="submit" className="save-button">
+                  {editingShop ? 'Opslaan' : 'Toevoegen'}
+                </button>
+              </div>
+            </form>
+
+            {/* Shop List */}
+            <div className="category-list-section">
+              <h3>Bestaande winkels</h3>
+              {shops.length === 0 ? (
+                <p className="empty-text">Geen winkels toegevoegd</p>
+              ) : (
+                <div className="category-list">
+                  {shops.map(shop => (
+                    <div key={shop.id} className="category-list-item">
+                      <div className="shop-info">
+                        <span className="category-list-name">{shop.name}</span>
+                        {shop.address && (
+                          <span className="shop-address">{shop.address}</span>
+                        )}
+                      </div>
+                      <div className="category-list-actions">
+                        <button
+                          className="action-button edit"
+                          onClick={() => handleShopEdit(shop)}
+                          aria-label={`Bewerk ${shop.name}`}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          className="action-button delete"
+                          onClick={() => handleShopDelete(shop.id)}
+                          aria-label={`Verwijder ${shop.name}`}
                         >
                           <Trash2 size={14} />
                         </button>

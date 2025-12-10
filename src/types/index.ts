@@ -36,12 +36,20 @@ export interface ShoppingItem {
   addeddate: string;
   completeddate?: string;
   notes?: string;
+  shopid?: string;
 }
 
 export interface ShoppingCategory {
   id: string;
   name: string;
   color: string;
+}
+
+export interface Shop {
+  id: string;
+  name: string;
+  address?: string;
+  notes?: string;
 }
 // Maaltijd types
 export interface Meal {

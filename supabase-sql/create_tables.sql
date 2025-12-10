@@ -30,6 +30,14 @@ create table if not exists shopping_categories (
   color text
 );
 
+-- 3a. shops
+create table if not exists shops (
+  id text primary key,
+  name text not null,
+  address text,
+  notes text
+);
+
 -- 4. shopping_items
 create table if not exists shopping_items (
   id text primary key,
@@ -54,6 +62,19 @@ begin
     alter table shopping_items add column notes text;
   end if;
 end $$;
+
+-- Voeg shopid kolom toe aan shopping_items als deze nog niet bestaat
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns 
+    where table_name = 'shopping_items' 
+    and column_name = 'shopid'
+  ) then
+    alter table shopping_items add column shopid text;
+  end if;
+end $$;
+
 
 -- 5. sleepovers
 create table if not exists sleepovers (
