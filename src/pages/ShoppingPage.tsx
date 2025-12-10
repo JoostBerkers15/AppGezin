@@ -6,57 +6,46 @@ import {
   Plus, 
   Check, 
   X, 
-  Package, 
-  PackageX,
-  Filter,
+  Package,
   Search,
   Edit2,
-  Trash2
+  Trash2,
+  Settings,
+  Save
 } from 'lucide-react';
 import '../styles/ShoppingPage.css';
 
 const ShoppingPage: React.FC = () => {
   const { 
     shoppingItems, 
+    shoppingCategories,
     addShoppingItem, 
     updateShoppingItem, 
-    deleteShoppingItem
+    deleteShoppingItem,
+    addShoppingCategory,
+    updateShoppingCategory,
+    deleteShoppingCategory
   } = useAppData();
-
-  // Vaste categorieën
-  const shoppingCategories = [
-    { id: '1', name: 'Groente & Fruit', color: '#48bb78' },
-    { id: '2', name: 'Vlees & Vis', color: '#e53e3e' },
-    { id: '3', name: 'Zuivel & Eieren', color: '#4299e1' },
-    { id: '4', name: 'Brood & Bakkerij', color: '#ed8936' },
-    { id: '5', name: 'Diepvries', color: '#38b2ac' },
-    { id: '6', name: 'Dranken', color: '#9f7aea' },
-    { id: '7', name: 'Snacks & Snoep', color: '#f56565' },
-    { id: '8', name: 'Pasta & Rijst', color: '#ecc94b' },
-    { id: '9', name: 'Conserven', color: '#718096' },
-    { id: '10', name: 'Schoonmaak', color: '#4fd1c5' },
-    { id: '11', name: 'Persoonlijke Verzorging', color: '#fc8181' },
-    { id: '12', name: 'Baby & Kind', color: '#f6ad55' },
-    { id: '13', name: 'Huisdieren', color: '#90cdf4' },
-    { id: '14', name: 'Overig', color: '#a0aec0' }
-  ];
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showCompleted, setShowCompleted] = useState(false);
-  const [showOutOfStock, setShowOutOfStock] = useState(true);
+  
+  // Category management state
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<ShoppingCategory | null>(null);
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    color: '#718096'
+  });
   
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    quantity: 1,
-    unit: 'stuks',
-    instock: true
+    notes: ''
   });
-
-  const units = ['stuks', 'kg', 'gram', 'liter', 'ml', 'pakken', 'blikken', 'flessen'];
 
   // Filter and search items
   const filteredItems = useMemo(() => {
@@ -65,7 +54,8 @@ const ShoppingPage: React.FC = () => {
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.notes && item.notes.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -79,11 +69,6 @@ const ShoppingPage: React.FC = () => {
       filtered = filtered.filter(item => !item.iscompleted);
     }
 
-    // Out of stock filter
-    if (!showOutOfStock) {
-      filtered = filtered.filter(item => item.instock);
-    }
-
     return filtered.sort((a, b) => {
       // Sort by completion status first, then by name
       if (a.iscompleted !== b.iscompleted) {
@@ -91,7 +76,7 @@ const ShoppingPage: React.FC = () => {
       }
       return a.name.localeCompare(b.name);
     });
-  }, [shoppingItems, searchTerm, selectedCategory, showCompleted, showOutOfStock]);
+  }, [shoppingItems, searchTerm, selectedCategory, showCompleted]);
 
   // Group items by category
   const groupedItems = useMemo(() => {
@@ -111,10 +96,9 @@ const ShoppingPage: React.FC = () => {
   const stats = useMemo(() => {
     const total = shoppingItems.length;
     const completed = shoppingItems.filter(item => item.iscompleted).length;
-    const outOfStock = shoppingItems.filter(item => !item.instock).length;
     const pending = total - completed;
 
-    return { total, completed, outOfStock, pending };
+    return { total, completed, pending };
   }, [shoppingItems]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -122,7 +106,9 @@ const ShoppingPage: React.FC = () => {
     if (!formData.name.trim() || !formData.category) return;
 
     const itemData = {
-      ...formData,
+      name: formData.name.trim(),
+      category: formData.category,
+      notes: formData.notes.trim() || undefined,
       iscompleted: false
     };
 
@@ -141,9 +127,7 @@ const ShoppingPage: React.FC = () => {
     setFormData({
       name: '',
       category: '',
-      quantity: 1,
-      unit: 'stuks',
-      instock: true
+      notes: ''
     });
   };
 
@@ -152,9 +136,7 @@ const ShoppingPage: React.FC = () => {
     setFormData({
       name: item.name,
       category: item.category,
-      quantity: item.quantity,
-      unit: item.unit,
-      instock: item.instock
+      notes: item.notes || ''
     });
     setIsAddModalOpen(true);
   };
@@ -167,10 +149,6 @@ const ShoppingPage: React.FC = () => {
 
   const toggleCompleted = (id: string, iscompleted: boolean) => {
     updateShoppingItem(id, { iscompleted: !iscompleted });
-  };
-
-  const toggleInStock = (id: string, instock: boolean) => {
-    updateShoppingItem(id, { instock: !instock });
   };
 
   const closeModal = () => {
@@ -193,6 +171,60 @@ const ShoppingPage: React.FC = () => {
     }
   };
 
+  // Category management functions
+  const handleCategorySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryFormData.name.trim()) return;
+
+    if (editingCategory) {
+      updateShoppingCategory(editingCategory.id, categoryFormData);
+      setEditingCategory(null);
+    } else {
+      addShoppingCategory(categoryFormData);
+    }
+
+    setCategoryFormData({ name: '', color: '#718096' });
+    setIsCategoryModalOpen(false);
+  };
+
+  const handleCategoryEdit = (category: ShoppingCategory) => {
+    setEditingCategory(category);
+    setCategoryFormData({
+      name: category.name,
+      color: category.color
+    });
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleCategoryDelete = (id: string) => {
+    const category = shoppingCategories.find(c => c.id === id);
+    if (!category) return;
+    
+    // Check if any items use this category
+    const itemsUsingCategory = shoppingItems.filter(item => item.category === category.name);
+    if (itemsUsingCategory.length > 0) {
+      alert(`Deze categorie wordt nog gebruikt door ${itemsUsingCategory.length} item(s). Verwijder eerst deze items of wijzig hun categorie.`);
+      return;
+    }
+
+    if (window.confirm(`Weet je zeker dat je de categorie "${category.name}" wilt verwijderen?`)) {
+      deleteShoppingCategory(id);
+    }
+  };
+
+  const closeCategoryModal = () => {
+    setIsCategoryModalOpen(false);
+    setEditingCategory(null);
+    setCategoryFormData({ name: '', color: '#718096' });
+  };
+
+  // Predefined colors for categories
+  const categoryColors = [
+    '#48bb78', '#e53e3e', '#4299e1', '#ed8936', '#38b2ac',
+    '#9f7aea', '#f56565', '#ecc94b', '#718096', '#4fd1c5',
+    '#fc8181', '#f6ad55', '#90cdf4', '#a0aec0'
+  ];
+
   return (
     <div className="shopping-page">
       <div className="page-header">
@@ -202,6 +234,14 @@ const ShoppingPage: React.FC = () => {
         </div>
         
         <div className="header-actions">
+          <button 
+            className="add-button secondary"
+            onClick={() => setIsCategoryModalOpen(true)}
+            title="Categorieën beheren"
+          >
+            <Settings size={20} />
+            Categorieën
+          </button>
           <button 
             className="add-button"
             onClick={() => setIsAddModalOpen(true)}
@@ -243,16 +283,6 @@ const ShoppingPage: React.FC = () => {
             <span className="stat-label">Afgevinkt</span>
           </div>
         </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon out-of-stock">
-            <PackageX size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-number">{stats.outOfStock}</span>
-            <span className="stat-label">Op</span>
-          </div>
-        </div>
       </div>
 
       {/* Filters */}
@@ -289,15 +319,6 @@ const ShoppingPage: React.FC = () => {
                 onChange={(e) => setShowCompleted(e.target.checked)}
               />
               <span>Toon afgevinkt</span>
-            </label>
-            
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={showOutOfStock}
-                onChange={(e) => setShowOutOfStock(e.target.checked)}
-              />
-              <span>Toon 'op' items</span>
             </label>
           </div>
 
@@ -340,7 +361,7 @@ const ShoppingPage: React.FC = () => {
                 {items.map(item => (
                   <div 
                     key={item.id} 
-                    className={`item-card ${item.iscompleted ? 'completed' : ''} ${!item.instock ? 'out-of-stock' : ''}`}
+                    className={`item-card ${item.iscompleted ? 'completed' : ''}`}
                   >
                     <div className="item-main">
                       <button
@@ -353,17 +374,9 @@ const ShoppingPage: React.FC = () => {
                       
                       <div className="item-info">
                         <h4>{item.name}</h4>
-                        <p>{item.quantity} {item.unit}</p>
-                      </div>
-                      
-                      <div className="item-status">
-                        <button
-                          className={`stock-button ${item.instock ? 'in-stock' : 'out-of-stock'}`}
-                          onClick={() => toggleInStock(item.id, item.instock)}
-                          title={item.instock ? 'Markeer als op' : 'Markeer als voorradig'}
-                        >
-                          {item.instock ? <Package size={16} /> : <PackageX size={16} />}
-                        </button>
+                        {item.notes && (
+                          <p className="item-notes">{item.notes}</p>
+                        )}
                       </div>
                     </div>
                     
@@ -391,7 +404,7 @@ const ShoppingPage: React.FC = () => {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Item Modal */}
       {isAddModalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -415,34 +428,6 @@ const ShoppingPage: React.FC = () => {
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="quantity">Aantal *</label>
-                  <input
-                    type="number"
-                    id="quantity"
-                    min="1"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="unit">Eenheid *</label>
-                  <select
-                    id="unit"
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    required
-                  >
-                    {units.map(unit => (
-                      <option key={unit} value={unit}>{unit}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               <div className="form-group">
                 <label htmlFor="category">Categorie *</label>
                 <select
@@ -461,14 +446,14 @@ const ShoppingPage: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={formData.instock}
-                    onChange={(e) => setFormData({ ...formData, instock: e.target.checked })}
-                  />
-                  <span>Momenteel op voorraad</span>
-                </label>
+                <label htmlFor="notes">Opmerkingen</label>
+                <textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Optionele opmerkingen..."
+                  rows={3}
+                />
               </div>
 
               <div className="modal-actions">
@@ -480,6 +465,104 @@ const ShoppingPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {isCategoryModalOpen && (
+        <div className="modal-overlay" onClick={closeCategoryModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingCategory ? 'Categorie bewerken' : 'Categorie toevoegen'}</h2>
+              <button className="close-button" onClick={closeCategoryModal}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCategorySubmit} className="modal-form">
+              <div className="form-group">
+                <label htmlFor="category-name">Naam *</label>
+                <input
+                  type="text"
+                  id="category-name"
+                  value={categoryFormData.name}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                  placeholder="Bijv. Groente & Fruit"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="category-color">Kleur</label>
+                <div className="color-picker-container">
+                  <input
+                    type="color"
+                    id="category-color"
+                    value={categoryFormData.color}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, color: e.target.value })}
+                    className="color-input"
+                  />
+                  <div className="color-presets">
+                    {categoryColors.map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        className="color-preset"
+                        style={{ backgroundColor: color }}
+                        onClick={() => setCategoryFormData({ ...categoryFormData, color })}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="cancel-button" onClick={closeCategoryModal}>
+                  Annuleren
+                </button>
+                <button type="submit" className="save-button">
+                  {editingCategory ? 'Opslaan' : 'Toevoegen'}
+                </button>
+              </div>
+            </form>
+
+            {/* Category List */}
+            <div className="category-list-section">
+              <h3>Bestaande categorieën</h3>
+              {shoppingCategories.length === 0 ? (
+                <p className="empty-text">Geen categorieën toegevoegd</p>
+              ) : (
+                <div className="category-list">
+                  {shoppingCategories.map(category => (
+                    <div key={category.id} className="category-list-item">
+                      <div 
+                        className="category-color-indicator"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span className="category-list-name">{category.name}</span>
+                      <div className="category-list-actions">
+                        <button
+                          className="action-button edit"
+                          onClick={() => handleCategoryEdit(category)}
+                          aria-label={`Bewerk ${category.name}`}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          className="action-button delete"
+                          onClick={() => handleCategoryDelete(category.id)}
+                          aria-label={`Verwijder ${category.name}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

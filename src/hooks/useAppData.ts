@@ -3,6 +3,7 @@ import {
   FamilyMember, 
   CalendarEvent, 
   ShoppingItem, 
+  ShoppingCategory,
   Meal, 
   Sleepover, 
   Task 
@@ -11,6 +12,7 @@ import {
   familyMembersApi,
   calendarEventsApi,
   shoppingItemsApi,
+  shoppingCategoriesApi,
   mealsApi,
   sleepoversApi,
   tasksApi
@@ -20,6 +22,7 @@ export const useAppData = () => {
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [shoppingCategories, setShoppingCategories] = useState<ShoppingCategory[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [sleepovers, setSleepovers] = useState<Sleepover[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -37,6 +40,7 @@ export const useAppData = () => {
         familyRes,
         calendarRes,
         shoppingItemsRes,
+        shoppingCategoriesRes,
         mealsRes,
         sleepoversRes,
         tasksRes
@@ -44,6 +48,7 @@ export const useAppData = () => {
         familyMembersApi.getAll(),
         calendarEventsApi.getAll(),
         shoppingItemsApi.getAll(),
+        shoppingCategoriesApi.getAll(),
         mealsApi.getAll(),
         sleepoversApi.getAll(),
         tasksApi.getAll()
@@ -52,6 +57,7 @@ export const useAppData = () => {
       setFamilyMembers(familyRes);
       setCalendarEvents(calendarRes);
       setShoppingItems(shoppingItemsRes);
+      setShoppingCategories(shoppingCategoriesRes);
       setMeals(mealsRes);
       setSleepovers(sleepoversRes);
       setTasks(tasksRes);
@@ -211,7 +217,49 @@ export const useAppData = () => {
   // ============================================================================
   // SHOPPING CATEGORIES
   // ============================================================================
-  // Shopping categories are now hardcoded in ShoppingPage.tsx
+
+  const addShoppingCategory = async (category: Omit<ShoppingCategory, 'id'>) => {
+    try {
+      const newCategory: ShoppingCategory = {
+        ...category,
+        id: Date.now().toString()
+      };
+      const response = await shoppingCategoriesApi.create(newCategory);
+      if (response) setShoppingCategories(prev => [...prev, response]);
+      return response;
+    } catch (error) {
+      console.error('Error adding shopping category:', error);
+      throw error;
+    }
+  };
+
+  const updateShoppingCategory = async (id: string, updates: Partial<ShoppingCategory>) => {
+    try {
+      const existing = shoppingCategories.find(c => c.id === id);
+      if (!existing) return;
+      
+      const updated = { ...existing, ...updates };
+      const response = await shoppingCategoriesApi.update(id, updated);
+      if (response) {
+        setShoppingCategories(prev => prev.map(category => 
+          category.id === id ? response : category
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating shopping category:', error);
+      throw error;
+    }
+  };
+
+  const deleteShoppingCategory = async (id: string) => {
+    try {
+      await shoppingCategoriesApi.delete(id);
+      setShoppingCategories(prev => prev.filter(category => category.id !== id));
+    } catch (error) {
+      console.error('Error deleting shopping category:', error);
+      throw error;
+    }
+  };
 
   // ============================================================================
   // MEALS
@@ -366,6 +414,7 @@ export const useAppData = () => {
     familyMembers,
     calendarEvents,
     shoppingItems,
+    shoppingCategories,
     meals,
     sleepovers,
     tasks,
@@ -385,6 +434,11 @@ export const useAppData = () => {
     addShoppingItem,
     updateShoppingItem,
     deleteShoppingItem,
+    
+    // Shopping Categories
+    addShoppingCategory,
+    updateShoppingCategory,
+    deleteShoppingCategory,
     
     // Meals
     addMeal,

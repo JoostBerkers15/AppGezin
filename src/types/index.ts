@@ -29,12 +29,13 @@ export interface ShoppingItem {
   id: string;
   name: string;
   category: string;
-  quantity: number;
-  unit: string;
-  instock: boolean;
+  quantity?: number;
+  unit?: string;
+  instock?: boolean;
   iscompleted: boolean;
   addeddate: string;
   completeddate?: string;
+  notes?: string;
 }
 
 export interface ShoppingCategory {
